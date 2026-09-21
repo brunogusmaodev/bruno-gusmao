@@ -1,25 +1,24 @@
 import type { MetadataRoute } from "next";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-  const posts = await fetch(`${base}/api/posts`, { cache: "no-store" })
-    .then<{ slug: string; updatedAt: string }[]>((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [projects, posts] = await Promise.all([
+    fetch(`${base}/api/projects`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    fetch(`${base}/api/posts`).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: "https://brunogusmao.dev", lastModified: new Date(), changeFrequency: "monthly", priority: 1 },
-    { url: "https://brunogusmao.dev/about", lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: "https://brunogusmao.dev/projects", lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: "https://brunogusmao.dev/blog", lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: "https://brunogusmao.dev/contact", lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: "https://brunogusmao.dev/", lastModified: new Date(), priority: 1 },
+    { url: "https://brunogusmao.dev/projects", lastModified: new Date(), priority: 0.8 },
+    { url: "https://brunogusmao.dev/blog", lastModified: new Date(), priority: 0.8 },
+    { url: "https://brunogusmao.dev/contact", lastModified: new Date(), priority: 0.7 },
   ];
 
-  const postRoutes: MetadataRoute.Sitemap = posts.map((p) => ({
+  const postRoutes = (posts ?? []).map((p: { slug: string; updatedAt?: string }) => ({
     url: `https://brunogusmao.dev/blog/${p.slug}`,
-    lastModified: new Date(p.updatedAt),
-    changeFrequency: "weekly",
-    priority: 0.7,
+    lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+    priority: 0.6,
   }));
 
   return [...staticRoutes, ...postRoutes];

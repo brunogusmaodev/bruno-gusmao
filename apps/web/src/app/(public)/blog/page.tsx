@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@base-ui/react/button";
-import FeaturedCard from "@/components/Common/featuredCard";
+import { SectionHeader } from "@/components/sections/section-header";
+import { ContentCard, type BadgeData } from "@/components/sections/content-card";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -9,16 +8,12 @@ export const metadata: Metadata = {
     "Artigos sobre desenvolvimento web, arquitetura de software e tecnologia escritos por Bruno Gusmão.",
   openGraph: {
     title: "Blog | Bruno Gusmão",
-    description:
-      "Artigos sobre desenvolvimento web, arquitetura de software e tecnologia.",
+    description: "Artigos sobre desenvolvimento web, arquitetura de software e tecnologia.",
     url: "https://brunogusmao.dev/blog",
   },
 };
-import CommonGrid from "@/components/Common/commonGrid";
-import Footer from "@/components/Common/footer";
-import { TypingAnimation } from "@/components/ui/typing-animation";
-import type { BadgeData } from "@/components/Common/featuredCard";
-import type { GridItem } from "@/components/Common/commonGrid";
+
+const base = process.env.API_URL ?? "http://localhost:3001";
 
 type ApiPost = {
   id: string;
@@ -29,6 +24,7 @@ type ApiPost = {
   badge1Id: string | null;
   badge2Id: string | null;
   badge3Id: string | null;
+  createdAt?: string;
 };
 
 type ApiBadge = {
@@ -39,86 +35,61 @@ type ApiBadge = {
 };
 
 async function getData() {
-  const base = process.env.API_URL ?? "http://localhost:3001";
-  const [posts, badges] = await Promise.all([
-    fetch(`${base}/api/posts`, { cache: "no-store" }).then<ApiPost[]>((r) => r.ok ? r.json() : []),
-    fetch(`${base}/api/badges`, { cache: "no-store" }).then<ApiBadge[]>((r) => r.ok ? r.json() : []),
-  ]);
-  return { posts, badges };
+  try {
+    const [posts, badges] = await Promise.all([
+      fetch(`${base}/api/posts`, { cache: "no-store" }).then<ApiPost[]>((r) =>
+        r.ok ? r.json() : []
+      ),
+      fetch(`${base}/api/badges`, { cache: "no-store" }).then<ApiBadge[]>((r) =>
+        r.ok ? r.json() : []
+      ),
+    ]);
+    return { posts, badges };
+  } catch {
+    return { posts: [], badges: [] };
+  }
 }
 
 function resolveBadges(post: ApiPost, badgeMap: Record<string, ApiBadge>): BadgeData[] {
   return [post.badge1Id, post.badge2Id, post.badge3Id]
     .filter(Boolean)
-    .map((id) => badgeMap[id!])
+    .map((id) => badgeMap[id as string])
     .filter(Boolean)
-    .map((b) => ({ name: b.name, bgColor: b.bgColor, textColor: b.textColor }));
+    .map((b) => ({ id: b.id, name: b.name, bgColor: b.bgColor, textColor: b.textColor }));
 }
 
-function toGridItem(post: ApiPost, badgeMap: Record<string, ApiBadge>): GridItem {
-  return {
-    id: post.id,
-    image: post.imageUrl ? { src: post.imageUrl, alt: post.name } : null,
-    title: post.name,
-    description: post.summary,
-    badges: resolveBadges(post, badgeMap),
-    actions: [{ label: "Ler Artigo", href: `/blog/${post.slug}` }],
-  };
-}
-
-export default async function Blog() {
+export default async function BlogPage() {
   const { posts, badges } = await getData();
   const badgeMap = Object.fromEntries(badges.map((b) => [b.id, b]));
 
-  const [featured, ...rest] = posts;
-  const gridItems = rest.map((p) => toGridItem(p, badgeMap));
-
   return (
-    <main className="flex flex-col items-center justify-center max-w-[80%] gap-6 m-auto">
-      <div className="flex items-start w-full py-2">
-        <TypingAnimation
-          duration={200}
-          className="font-heading font-semibold text-primary text-6xl text-left"
-          aria-hidden="true"
-        >
-          BLOG_
-        </TypingAnimation>
-      </div>
-      <h3 className="text-left w-full">{"> "}Artigos sobre desenvolvimento e tecnologia</h3>
+    <section className="section-padding">
+      <div className="container-site">
+        <SectionHeader
+          overline="Blog"
+          title="Artigos & Notas"
+          description="Ideias, tutoriais e aprendizados sobre desenvolvimento e tecnologia."
+        />
 
-      {featured && (
-        <section className="w-full">
-          <TypingAnimation
-            duration={200}
-            className="font-heading font-semibold text-primary text-2xl text-left"
-            aria-hidden="true"
-          >
-            POST EM DESTAQUE_
-          </TypingAnimation>
-          <div className="mt-6 py-6">
-            <FeaturedCard
-              image={featured.imageUrl ? { src: featured.imageUrl, alt: featured.name } : null}
-              title={featured.name}
-              description={featured.summary}
-              badges={resolveBadges(featured, badgeMap)}
-            >
-              <Link href={`/blog/${featured.slug}`}>
-                <Button className="bg-background text-foreground py-3 px-4 rounded-xl">
-                  Ler Artigo
-                </Button>
-              </Link>
-            </FeaturedCard>
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <ContentCard
+              key={post.id}
+              title={post.name}
+              description={post.summary}
+              image={post.imageUrl}
+              href={`/blog/${post.slug}`}
+              badges={resolveBadges(post, badgeMap)}
+            />
+          ))}
+        </div>
+
+        {posts.length === 0 && (
+          <div className="mt-20 rounded-2xl border border-border/50 bg-card/50 p-12 text-center">
+            <p className="text-muted-foreground">Nenhum artigo publicado ainda.</p>
           </div>
-        </section>
-      )}
-
-      {gridItems.length > 0 && <CommonGrid items={gridItems} />}
-
-      {posts.length === 0 && (
-        <p className="text-muted-foreground text-sm py-16">Nenhum artigo publicado ainda.</p>
-      )}
-
-      <Footer />
-    </main>
+        )}
+      </div>
+    </section>
   );
 }

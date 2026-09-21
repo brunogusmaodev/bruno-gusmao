@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@base-ui/react/button";
-import FeaturedCard from "@/components/Common/featuredCard";
+import { SectionHeader } from "@/components/sections/section-header";
+import { ContentCard, type BadgeData } from "@/components/sections/content-card";
 
 export const metadata: Metadata = {
   title: "Projetos",
@@ -9,16 +8,12 @@ export const metadata: Metadata = {
     "Portfólio de projetos de Bruno Gusmão — aplicações web fullstack com NestJS, Next.js e TypeScript.",
   openGraph: {
     title: "Projetos | Bruno Gusmão",
-    description:
-      "Projetos fullstack desenvolvidos por Bruno Gusmão com NestJS, Next.js e TypeScript.",
+    description: "Projetos fullstack desenvolvidos por Bruno Gusmão.",
     url: "https://brunogusmao.dev/projects",
   },
 };
-import CommonGrid from "@/components/Common/commonGrid";
-import Footer from "@/components/Common/footer";
-import { TypingAnimation } from "@/components/ui/typing-animation";
-import type { BadgeData } from "@/components/Common/featuredCard";
-import type { GridItem } from "@/components/Common/commonGrid";
+
+const base = process.env.API_URL ?? "http://localhost:3001";
 
 type ApiProject = {
   id: string;
@@ -41,98 +36,89 @@ type ApiBadge = {
 };
 
 async function getData() {
-  const base = process.env.API_URL ?? "http://localhost:3001";
-  const [projects, badges] = await Promise.all([
-    fetch(`${base}/api/projects`, { cache: "no-store" }).then<ApiProject[]>((r) => r.ok ? r.json() : []),
-    fetch(`${base}/api/badges`, { cache: "no-store" }).then<ApiBadge[]>((r) => r.ok ? r.json() : []),
-  ]);
-  return { projects, badges };
+  try {
+    const [projects, badges] = await Promise.all([
+      fetch(`${base}/api/projects`, { cache: "no-store" }).then<ApiProject[]>((r) =>
+        r.ok ? r.json() : []
+      ),
+      fetch(`${base}/api/badges`, { cache: "no-store" }).then<ApiBadge[]>((r) =>
+        r.ok ? r.json() : []
+      ),
+    ]);
+    return { projects, badges };
+  } catch {
+    return { projects: [], badges: [] };
+  }
 }
 
 function resolveBadges(project: ApiProject, badgeMap: Record<string, ApiBadge>): BadgeData[] {
   return [project.badge1Id, project.badge2Id, project.badge3Id]
     .filter(Boolean)
-    .map((id) => badgeMap[id!])
+    .map((id) => badgeMap[id as string])
     .filter(Boolean)
-    .map((b) => ({ name: b.name, bgColor: b.bgColor, textColor: b.textColor }));
+    .map((b) => ({ id: b.id, name: b.name, bgColor: b.bgColor, textColor: b.textColor }));
 }
 
-function toGridItem(project: ApiProject, badgeMap: Record<string, ApiBadge>): GridItem {
-  const actions = [];
-  if (project.projectUrl) actions.push({ label: "Ver Projeto", href: project.projectUrl });
-  if (project.repoUrl) actions.push({ label: "Repositório", href: project.repoUrl });
-  return {
-    id: project.id,
-    image: project.image ? { src: project.image, alt: project.name } : null,
-    title: project.name,
-    description: project.summary,
-    badges: resolveBadges(project, badgeMap),
-    actions,
-  };
-}
-
-export default async function Projects() {
+export default async function ProjectsPage() {
   const { projects, badges } = await getData();
   const badgeMap = Object.fromEntries(badges.map((b) => [b.id, b]));
-
   const [featured, ...rest] = projects;
-  const gridItems = rest.map((p) => toGridItem(p, badgeMap));
 
   return (
-    <main className="flex flex-col items-center justify-center max-w-[80%] gap-6 m-auto">
-      <div className="flex items-start w-full py-2">
-        <TypingAnimation
-          duration={200}
-          className="font-heading font-semibold text-primary text-6xl text-left"
-          aria-hidden="true"
-        >
-          PROJETOS_
-        </TypingAnimation>
-      </div>
-      <h3 className="text-left w-full">{"> "}Projetos feitos em cursos e freelances</h3>
+    <section className="section-padding">
+      <div className="container-site">
+        <SectionHeader
+          overline="Portfólio"
+          title="Projetos Selecionados"
+          description="Aplicações e experimentos que mostram minha trajetória como desenvolvedor."
+        />
 
-      {featured && (
-        <section className="w-full">
-          <TypingAnimation
-            duration={200}
-            className="font-heading font-semibold text-primary text-2xl text-left"
-            aria-hidden="true"
-          >
-            PROJETO EM DESTAQUE_
-          </TypingAnimation>
-          <div className="mt-6 py-6">
-            <FeaturedCard
-              image={featured.image ? { src: featured.image, alt: featured.name } : null}
+        {featured && (
+          <div className="mt-14">
+            <ContentCard
+              featured
               title={featured.name}
               description={featured.summary}
+              image={featured.image}
               badges={resolveBadges(featured, badgeMap)}
-            >
-              {featured.projectUrl && (
-                <Link href={featured.projectUrl} target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-background text-foreground py-3 px-4 rounded-xl">
-                    Ver Projeto
-                  </Button>
-                </Link>
-              )}
-              {featured.repoUrl && (
-                <Link href={featured.repoUrl} target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-background text-foreground py-3 px-4 rounded-xl">
-                    Repositório
-                  </Button>
-                </Link>
-              )}
-            </FeaturedCard>
+              actions={[
+                ...(featured.projectUrl
+                  ? [{ label: "Ver Projeto", href: featured.projectUrl, external: true }]
+                  : []),
+                ...(featured.repoUrl
+                  ? [{ label: "Repositório", href: featured.repoUrl, external: true }]
+                  : []),
+              ]}
+            />
           </div>
-        </section>
-      )}
+        )}
 
-      {gridItems.length > 0 && <CommonGrid items={gridItems} />}
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {rest.map((project) => (
+            <ContentCard
+              key={project.id}
+              title={project.name}
+              description={project.summary}
+              image={project.image}
+              badges={resolveBadges(project, badgeMap)}
+              actions={[
+                ...(project.projectUrl
+                  ? [{ label: "Ver Projeto", href: project.projectUrl, external: true }]
+                  : []),
+                ...(project.repoUrl
+                  ? [{ label: "Repositório", href: project.repoUrl, external: true }]
+                  : []),
+              ]}
+            />
+          ))}
+        </div>
 
-      {projects.length === 0 && (
-        <p className="text-muted-foreground text-sm py-16">Nenhum projeto publicado ainda.</p>
-      )}
-
-      <Footer />
-    </main>
+        {projects.length === 0 && (
+          <div className="mt-20 rounded-2xl border border-border/50 bg-card/50 p-12 text-center">
+            <p className="text-muted-foreground">Nenhum projeto publicado ainda.</p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

@@ -1,0 +1,138 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@base-ui/react/button";
+import FeaturedCard from "@/legacy/components/Common/featuredCard";
+
+export const metadata: Metadata = {
+  title: "Projetos",
+  description:
+    "Portfólio de projetos de Bruno Gusmão — aplicações web fullstack com NestJS, Next.js e TypeScript.",
+  openGraph: {
+    title: "Projetos | Bruno Gusmão",
+    description:
+      "Projetos fullstack desenvolvidos por Bruno Gusmão com NestJS, Next.js e TypeScript.",
+    url: "https://brunogusmao.dev/projects",
+  },
+};
+import CommonGrid from "@/legacy/components/Common/commonGrid";
+import Footer from "@/legacy/components/Common/footer";
+import { TypingAnimation } from "@/components/ui/typing-animation";
+import type { BadgeData } from "@/legacy/components/Common/featuredCard";
+import type { GridItem } from "@/legacy/components/Common/commonGrid";
+
+type ApiProject = {
+  id: string;
+  name: string;
+  slug: string;
+  summary: string;
+  image: string | null;
+  projectUrl: string | null;
+  repoUrl: string | null;
+  badge1Id: string | null;
+  badge2Id: string | null;
+  badge3Id: string | null;
+};
+
+type ApiBadge = {
+  id: string;
+  name: string;
+  bgColor: string;
+  textColor: string;
+};
+
+async function getData() {
+  const base = process.env.API_URL ?? "http://localhost:3001";
+  const [projects, badges] = await Promise.all([
+    fetch(`${base}/api/projects`, { cache: "no-store" }).then<ApiProject[]>((r) => r.ok ? r.json() : []),
+    fetch(`${base}/api/badges`, { cache: "no-store" }).then<ApiBadge[]>((r) => r.ok ? r.json() : []),
+  ]);
+  return { projects, badges };
+}
+
+function resolveBadges(project: ApiProject, badgeMap: Record<string, ApiBadge>): BadgeData[] {
+  return [project.badge1Id, project.badge2Id, project.badge3Id]
+    .filter(Boolean)
+    .map((id) => badgeMap[id!])
+    .filter(Boolean)
+    .map((b) => ({ name: b.name, bgColor: b.bgColor, textColor: b.textColor }));
+}
+
+function toGridItem(project: ApiProject, badgeMap: Record<string, ApiBadge>): GridItem {
+  const actions = [];
+  if (project.projectUrl) actions.push({ label: "Ver Projeto", href: project.projectUrl });
+  if (project.repoUrl) actions.push({ label: "Repositório", href: project.repoUrl });
+  return {
+    id: project.id,
+    image: project.image ? { src: project.image, alt: project.name } : null,
+    title: project.name,
+    description: project.summary,
+    badges: resolveBadges(project, badgeMap),
+    actions,
+  };
+}
+
+export default async function Projects() {
+  const { projects, badges } = await getData();
+  const badgeMap = Object.fromEntries(badges.map((b) => [b.id, b]));
+
+  const [featured, ...rest] = projects;
+  const gridItems = rest.map((p) => toGridItem(p, badgeMap));
+
+  return (
+    <main className="flex flex-col items-center justify-center max-w-[80%] gap-6 m-auto">
+      <div className="flex items-start w-full py-2">
+        <TypingAnimation
+          duration={200}
+          className="font-heading font-semibold text-primary text-6xl text-left"
+          aria-hidden="true"
+        >
+          PROJETOS_
+        </TypingAnimation>
+      </div>
+      <h3 className="text-left w-full">{"> "}Projetos feitos em cursos e freelances</h3>
+
+      {featured && (
+        <section className="w-full">
+          <TypingAnimation
+            duration={200}
+            className="font-heading font-semibold text-primary text-2xl text-left"
+            aria-hidden="true"
+          >
+            PROJETO EM DESTAQUE_
+          </TypingAnimation>
+          <div className="mt-6 py-6">
+            <FeaturedCard
+              image={featured.image ? { src: featured.image, alt: featured.name } : null}
+              title={featured.name}
+              description={featured.summary}
+              badges={resolveBadges(featured, badgeMap)}
+            >
+              {featured.projectUrl && (
+                <Link href={featured.projectUrl} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-background text-foreground py-3 px-4 rounded-xl">
+                    Ver Projeto
+                  </Button>
+                </Link>
+              )}
+              {featured.repoUrl && (
+                <Link href={featured.repoUrl} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-background text-foreground py-3 px-4 rounded-xl">
+                    Repositório
+                  </Button>
+                </Link>
+              )}
+            </FeaturedCard>
+          </div>
+        </section>
+      )}
+
+      {gridItems.length > 0 && <CommonGrid items={gridItems} />}
+
+      {projects.length === 0 && (
+        <p className="text-muted-foreground text-sm py-16">Nenhum projeto publicado ainda.</p>
+      )}
+
+      <Footer />
+    </main>
+  );
+}
