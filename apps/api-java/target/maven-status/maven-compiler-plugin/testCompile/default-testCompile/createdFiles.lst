@@ -1,9 +1,0 @@
-dev/brunogusmao/api/auth/AuthIntegrationTest.class
-dev/brunogusmao/api/todos/TodoControllerIT$TodoCreateBody.class
-dev/brunogusmao/api/kanbantasks/KanbanTaskControllerIT.class
-dev/brunogusmao/api/badges/BadgeControllerIT.class
-dev/brunogusmao/api/todos/TodoControllerIT$TodoUpdateBody.class
-dev/brunogusmao/api/todos/TodoControllerIT.class
-dev/brunogusmao/api/sitesettings/SiteSettingsControllerIT.class
-dev/brunogusmao/api/posts/PostControllerIT.class
-dev/brunogusmao/api/projects/ProjectControllerIT.class

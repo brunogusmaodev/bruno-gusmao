@@ -1,8 +1,0 @@
-spring:
-  jpa:
-    show-sql: true
-
-logging:
-  level:
-    org.springframework.security: DEBUG
-    dev.brunogusmao.api: DEBUG
