@@ -1,8 +1,0 @@
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/auth/AuthIntegrationTest.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/badges/BadgeControllerIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/kanban/KanbanWebSocketIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/kanbantasks/KanbanTaskControllerIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/posts/PostControllerIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/projects/ProjectControllerIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/sitesettings/SiteSettingsControllerIT.java
-/home/bruno/Documentos/Projetos/bruno-gusmao/apps/api-java/src/test/java/dev/brunogusmao/api/todos/TodoControllerIT.java
