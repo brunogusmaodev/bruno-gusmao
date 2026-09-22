@@ -8,7 +8,7 @@ type WithVisibility = { visible: boolean };
 type WithKanban = { kanbanStatus: string };
 
 async function getStats() {
-  const base = process.env.API_URL ?? "http://localhost:3001";
+  const base = process.env.API_URL ?? "http://localhost:3002";
   const authHeaders = await getSessionCookieHeader();
 
   try {

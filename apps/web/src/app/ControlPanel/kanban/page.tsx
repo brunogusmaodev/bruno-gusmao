@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { KanbanBoard, KanbanTask } from "@/components/admin/kanban-board";
 import { getSessionCookieHeader } from "@/lib/server-auth";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 async function getTasks() {
   const authHeaders = await getSessionCookieHeader();

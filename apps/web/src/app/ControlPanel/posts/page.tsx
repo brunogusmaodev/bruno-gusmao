@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { PostsTable, Post, Badge } from "@/components/admin/posts-table";
 import { getSessionCookieHeader } from "@/lib/server-auth";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 async function getData() {
   const authHeaders = await getSessionCookieHeader();

@@ -13,7 +13,7 @@ import { AdminBadge } from "./common-badge";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./use-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
 
 export type Post = {
   id: string;

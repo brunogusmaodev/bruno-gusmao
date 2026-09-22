@@ -5,7 +5,7 @@ import { ProjectsTable, Project } from "@/components/admin/projects-table";
 import { getSessionCookieHeader } from "@/lib/server-auth";
 import type { Badge } from "@/components/admin/posts-table";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 async function getData() {
   const authHeaders = await getSessionCookieHeader();

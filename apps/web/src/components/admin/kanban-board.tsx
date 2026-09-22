@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./use-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3002";
 
 const FIXED_COLORS = { blog: "#3b82f6", project: "#8b5cf6" };
 
@@ -134,7 +134,7 @@ export function KanbanBoard({ initialTasks }: { initialTasks: KanbanTask[] }) {
   const { toast, Toaster } = useToast();
 
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(`${WS_URL}/ws/kanban`);
     wsRef.current = ws;
     ws.onmessage = (event) => {
       try {
@@ -180,8 +180,8 @@ export function KanbanBoard({ initialTasks }: { initialTasks: KanbanTask[] }) {
         }),
       });
       if (!res.ok) throw new Error();
-      const [created] = await res.json();
-      setTasks((prev) => [...prev, created]);
+      const data = await res.json();
+      setTasks((prev) => [...prev, Array.isArray(data) ? data[0] : data]);
       toast("Tarefa criada");
       setCreateOpen(false);
     } catch {

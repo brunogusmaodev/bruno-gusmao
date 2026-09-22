@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import { SectionHeader } from "@/components/sections/section-header";
 import { BadgeData } from "@/components/sections/content-card";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 type ApiPost = {
   id: string;
@@ -33,7 +33,7 @@ type ApiBadge = {
 async function getPost(slug: string): Promise<{ post: ApiPost; badges: BadgeData[] } | null> {
   try {
     const [postRes, badgesRes] = await Promise.all([
-      fetch(`${base}/api/posts/slug/${slug}`, { cache: "no-store" }),
+      fetch(`${base}/api/posts/${slug}`, { cache: "no-store" }),
       fetch(`${base}/api/badges`, { cache: "no-store" }),
     ]);
     if (!postRes.ok) return null;

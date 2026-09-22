@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 type ApiPost = {
   id: string;

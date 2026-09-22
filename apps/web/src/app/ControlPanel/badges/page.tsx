@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/admin/page-header";
 import { BadgesTable, Badge } from "@/components/admin/badges-table";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 async function getBadges() {
   try {

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
 };
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 type ApiBadge = {
   id: string;
@@ -81,22 +81,21 @@ export default async function HomePage() {
       {/* Hero — case file */}
       <section className="relative pt-16 sm:pt-20 lg:pt-24">
         <div className="container-site">
-          <div className="border-t-2 border-foreground pt-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          <div>
+            {/* <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               <span>In re: Bruno Gusmão</span>
               <span className="hidden sm:inline">Dossiê nº 2026-001</span>
               <span>Rio de Janeiro · BR</span>
-            </div>
+            </div> */}
 
-            <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
+            <div className=" grid items-center gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
               <div className="flex flex-col gap-6">
                 <p className="eyebrow">Desenvolvedor Full Stack</p>
                 <h1 className="font-heading text-5xl font-semibold leading-[1.05] tracking-tight text-balance sm:text-6xl lg:text-7xl">
-                  Código limpo. Soluções completas.
+                  Soluções tecnológicas completas.
                 </h1>
                 <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
-                  Construo aplicações web modernas do frontend ao backend com React,
-                  Next.js, Node.js, NestJS, TypeScript e Docker.
+                  Construo aplicações web modernas completas com Next.js, Node.js, Java, NestJS e Docker.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -105,26 +104,13 @@ export default async function HomePage() {
                     className="inline-flex items-center gap-2 rounded-md bg-brand px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-brand/90"
                   >
                     <Mail className="size-4" />
-                    Fale comigo
+                    Vamos convesar
                   </Link>
-                  <a
-                    href="/CV_Bruno-pt.pdf"
-                    download
-                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-brand/40"
-                  >
-                    <Download className="size-4" />
-                    Baixar CV
-                  </a>
                 </div>
-
-                <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  <span className="size-1.5 rounded-full bg-brand" />
-                  Disponível para novos projetos
-                </p>
               </div>
 
               <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-border bg-card">
+                <div className="relative aspect-4/5 overflow-hidden rounded-lg border border-border bg-card">
                   <Image
                     src="/me.png"
                     alt="Foto de perfil de Bruno Gusmão"
@@ -134,9 +120,6 @@ export default async function HomePage() {
                     priority
                   />
                 </div>
-                <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Fig. 1 — Bruno Gusmão, 2026
-                </p>
               </div>
             </div>
           </div>
@@ -156,8 +139,8 @@ export default async function HomePage() {
               />
               <div className="mt-8 flex flex-col gap-4 text-muted-foreground">
                 <p>
-                  Cursei Análise e Desenvolvimento de Sistemas e, desde então, atuo
-                  como desenvolvedor freelancer — do frontend ao backend — com stack
+                  Formado em Análise e Desenvolvimento de Sistemas e atuante
+                  como desenvolvedor freelancer com stack
                   moderna.
                 </p>
                 <p>
@@ -172,18 +155,7 @@ export default async function HomePage() {
                 </p>
               </div>
             </div>
-            <div className="lg:pt-10">
-              <div className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-lg border border-border bg-card lg:max-w-full">
-                <Image
-                  src="/me.png"
-                  alt="Foto de perfil de Bruno Gusmão"
-                  width={600}
-                  height={600}
-                  className="h-full w-full object-cover"
-                  priority
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </section>

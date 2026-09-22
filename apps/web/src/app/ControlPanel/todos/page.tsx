@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { TodosBoard, Todo } from "@/components/admin/todos-board";
 import { getSessionCookieHeader } from "@/lib/server-auth";
 
-const base = process.env.API_URL ?? "http://localhost:3001";
+const base = process.env.API_URL ?? "http://localhost:3002";
 
 async function getTodos() {
   const authHeaders = await getSessionCookieHeader();

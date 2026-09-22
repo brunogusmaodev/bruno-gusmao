@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useToast } from "./use-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
 
 export type EventSettings = {
   eventPopupEnabled: boolean;

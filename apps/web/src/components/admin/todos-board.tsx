@@ -9,8 +9,8 @@ import { Dialog, DialogPopup, DialogHeader, DialogTitle, DialogCloseButton } fro
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./use-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3002";
 
 export type Todo = {
   id: string;
@@ -60,7 +60,7 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
   const { toast, Toaster } = useToast();
 
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(`${WS_URL}/ws/todos`);
     ws.onmessage = (event) => {
       try {
         const { event: type, data } = JSON.parse(event.data) as { event: string; data: Todo };
