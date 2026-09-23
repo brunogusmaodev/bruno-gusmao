@@ -8,9 +8,9 @@ Este arquivo descreve a arquitetura, decisões técnicas e armadilhas comuns do 
 
 Portfólio pessoal fullstack com painel administrativo. Monorepo com dois apps:
 
-- **`apps/api`** — Backend NestJS 11 + Fastify, porta 3001 (**produção**)
-- **`apps/web`** — Frontend Next.js 16 App Router, porta 3000
-- **`apps/api-java`** — Backend Spring Boot 4.1 (Java 21), porta 3002 — porta de **aprendizado**, ver seção "Migração Java" abaixo. Não é usado em produção; convive lado a lado com `apps/api` enquanto é construído.
+- **`apps/api`** — Backend NestJS 11 + Fastify, porta 3001 — **desativado nesta branch** (`api-java`); o frontend não consome mais este backend aqui. Continua sendo o backend real na `master`.
+- **`apps/web`** — Frontend Next.js 16 App Router, porta 3000. Nesta branch, consome exclusivamente `apps/api-java`.
+- **`apps/api-java`** — Backend Spring Boot 4.1 (Java 21), **porta 3001** nesta branch (assumiu a porta do Nest, que está desativado aqui) — ver seção "Migração Java" abaixo.
 
 Gerenciador de pacotes: **pnpm workspaces** + **Turborepo** (orquestra build, lint, typecheck com cache). Scripts raiz usam `turbo run <task>`. `apps/api-java` fica fora do workspace pnpm — é um projeto Maven autocontido (`./mvnw`), sem `package.json`.
 
@@ -18,11 +18,11 @@ Gerenciador de pacotes: **pnpm workspaces** + **Turborepo** (orquestra build, li
 
 ## Migração Java (projeto de aprendizado)
 
-`apps/api-java` é uma reimplementação em Spring Boot da API do portfólio, feita **para estudar Java/Spring antes de usar a stack em projetos profissionais** — não por necessidade técnica. `apps/api` (Nest) continua sendo o backend real em produção; o frontend em `apps/web` aponta pra ele, não pro Java, até que (e se) houver um cutover deliberado.
+`apps/api-java` é uma reimplementação em Spring Boot da API do portfólio, feita **para estudar Java/Spring antes de usar a stack em projetos profissionais** — não por necessidade técnica. Na `master`, `apps/api` (Nest) continua sendo o backend real em produção. Na branch `api-java`, já houve o cutover: o frontend em `apps/web` consome `apps/api-java` (porta 3001), e `apps/api` fica desativado/não usado.
 
 - Specs completos de cada módulo (modelo de dados, endpoints, regras de negócio, notas de paridade com o Nest): **`docs/java-migration/`** — comece pelo `docs/java-migration/README.md` (índice com status de cada módulo).
 - Diferenças de arquitetura relevantes em relação ao Nest: auth é Google OAuth2 + JWT próprio em cookie httpOnly (não BetterAuth), ORM é JPA/Hibernate (não Drizzle), migrations são Flyway (não drizzle-kit), banco Postgres é **separado** do de produção.
-- Se uma tarefa pedir para mexer na API, confirme com o usuário se é `apps/api` (Nest, produção) ou `apps/api-java` (Spring, aprendizado) — os dois coexistem e é fácil confundir.
+- Se uma tarefa pedir para mexer na API, confirme com o usuário se é `apps/api` (Nest) ou `apps/api-java` (Spring) — os dois coexistem no repo e é fácil confundir, mesmo com o Nest desativado nesta branch.
 
 ---
 
@@ -296,8 +296,10 @@ PORT=3001
 
 ### `apps/web/.env.local`
 ```env
+# Nesta branch (api-java), aponta pro backend Java, não pro Nest:
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=ws://localhost:3001
+API_URL=http://localhost:3001
 ```
 
 ---

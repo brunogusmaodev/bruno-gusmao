@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 // inteira, sem endpoint de "sign-in" via fetch) e a sessão vira um JWT em cookie
 // httpOnly (`access_token`), verificado em GET /api/auth/me (ver
 // docs/java-migration/01-auth.md).
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export type CurrentUser = { id: string; name: string; email: string };
 
