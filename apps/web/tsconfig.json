@@ -2,8 +2,7 @@
   "extends": "@repo/typescript-config/nextjs",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"],
-      "@/legacy/*": ["./src/legacy/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

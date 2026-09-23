@@ -8,10 +8,21 @@ Este arquivo descreve a arquitetura, decisões técnicas e armadilhas comuns do 
 
 Portfólio pessoal fullstack com painel administrativo. Monorepo com dois apps:
 
-- **`apps/api`** — Backend NestJS 11 + Fastify, porta 3001
-- **`apps/web`** — Frontend Next.js 16 App Router, porta 3000
+- **`apps/api`** — Backend NestJS 11 + Fastify, porta 3001 — **desativado**; mantido no repo por referência/histórico, mas o frontend não consome mais este backend.
+- **`apps/web`** — Frontend Next.js 16 App Router, porta 3000. Consome exclusivamente `apps/api-java`.
+- **`apps/api-java`** — Backend Spring Boot 4.1 (Java 21), **porta 3001** (assumiu a porta do Nest desativado) — backend real em produção. Ver seção "Migração Java" abaixo.
 
-Gerenciador de pacotes: **pnpm workspaces** + **Turborepo** (orquestra build, lint, typecheck com cache). Scripts raiz usam `turbo run <task>`.
+Gerenciador de pacotes: **pnpm workspaces** + **Turborepo** (orquestra build, lint, typecheck com cache). Scripts raiz usam `turbo run <task>`. `apps/api-java` fica fora do workspace pnpm — é um projeto Maven autocontido (`./mvnw`), sem `package.json`.
+
+---
+
+## Migração Java
+
+`apps/api-java` é uma reimplementação em Spring Boot da API original em NestJS. O cutover já aconteceu: o frontend em `apps/web` consome `apps/api-java` (porta 3001), e `apps/api` (Nest) fica desativado/não usado, mantido só como referência histórica.
+
+- Specs completos de cada módulo (modelo de dados, endpoints, regras de negócio, notas de paridade com o Nest): **`docs/java-migration/`** — comece pelo `docs/java-migration/README.md` (índice com status de cada módulo).
+- Diferenças de arquitetura relevantes em relação ao Nest: auth é Google OAuth2 + JWT próprio em cookie httpOnly (não BetterAuth), ORM é JPA/Hibernate (não Drizzle), migrations são Flyway (não drizzle-kit), banco Postgres é **separado** do que o Nest usava.
+- Se uma tarefa pedir para mexer na API, confirme com o usuário se é `apps/api` (Nest, desativado) ou `apps/api-java` (Spring, ativo) — os dois coexistem no repo e é fácil confundir.
 
 ---
 
@@ -285,8 +296,10 @@ PORT=3001
 
 ### `apps/web/.env.local`
 ```env
+# Aponta pro backend Java (apps/api-java), não pro Nest (desativado):
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=ws://localhost:3001
+API_URL=http://localhost:3001
 ```
 
 ---
