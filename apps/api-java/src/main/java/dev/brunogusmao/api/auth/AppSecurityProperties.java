@@ -21,6 +21,7 @@ public class AppSecurityProperties {
     private String jwtSecret;
     private int jwtExpirationDays = 7;
     private String jwtCookieName = "access_token";
+    private String cookieDomain;
 
     public List<String> getAllowedEmails() {
         return allowedEmails;
@@ -52,5 +53,13 @@ public class AppSecurityProperties {
 
     public void setJwtCookieName(String jwtCookieName) {
         this.jwtCookieName = jwtCookieName;
+    }
+
+    public String getCookieDomain() {
+        return cookieDomain;
+    }
+
+    public void setCookieDomain(String cookieDomain) {
+        this.cookieDomain = cookieDomain;
     }
 }

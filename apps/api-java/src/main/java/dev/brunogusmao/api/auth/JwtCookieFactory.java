@@ -13,14 +13,24 @@ final class JwtCookieFactory {
     }
 
     static ResponseCookie build(AppSecurityProperties properties, boolean secure, String value, long maxAgeSeconds) {
-        return ResponseCookie.from(properties.getJwtCookieName(), value)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(properties.getJwtCookieName(), value)
                 .httpOnly(true)
                 .secure(secure)
                 // Equivalente à mitigação de CSRF do BetterAuth hoje (cookie SameSite=Lax +
                 // CORS restrito à origem exata do frontend) — ver 00-arquitetura.md.
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(maxAgeSeconds)
-                .build();
+                .maxAge(maxAgeSeconds);
+
+        // Sem isso o cookie fica host-only de api.brunogusmao.dev: o browser nunca o envia
+        // pro brunogusmao.dev (frontend), e o PrivateLayout (Server Component) nunca vê o
+        // cookie na request — resultado é redirect de volta pro /login mesmo após login OK.
+        // Domain=brunogusmao.dev cobre o apex e todos os subdomínios (api., www.).
+        String cookieDomain = properties.getCookieDomain();
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            builder.domain(cookieDomain);
+        }
+
+        return builder.build();
     }
 }
