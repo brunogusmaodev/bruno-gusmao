@@ -1,6 +1,6 @@
 # Bruno Gusmão — Portfólio Fullstack
 
-Portfólio pessoal com painel administrativo completo. Monorepo **pnpm workspaces + Turborepo** com backend NestJS + Fastify, frontend Next.js 16 App Router, autenticação via BetterAuth (Google OAuth), Kanban em tempo real com WebSocket e drag-and-drop.
+Portfólio pessoal com painel administrativo completo. Monorepo **pnpm workspaces + Turborepo** para o frontend, com backend em **Spring Boot (Java)**, frontend Next.js 16 App Router, autenticação Google OAuth2 + JWT em cookie httpOnly, Kanban e Todos em tempo real com WebSocket e drag-and-drop.
 
 ---
 
@@ -16,14 +16,16 @@ Portfólio pessoal com painel administrativo completo. Monorepo **pnpm workspace
 - [Estrutura de Pastas](#estrutura-de-pastas)
 - [Rotas da API](#rotas-da-api)
 - [Documentação Swagger](#documentação-swagger)
-- [Kanban WebSocket](#kanban-websocket)
+- [WebSocket](#websocket)
 - [Deploy](#deploy)
 
 ---
 
 ## Sobre o Projeto
 
-Este repositório é um monorepo pnpm que reúne a API REST e o site do portfólio. O objetivo é ter um lugar centralizado para apresentar projetos e artigos, com um painel administrativo para gerenciar todo o conteúdo sem depender de serviços externos de CMS.
+Este repositório é um monorepo que reúne a API REST e o site do portfólio. O objetivo é ter um lugar centralizado para apresentar projetos e artigos, com um painel administrativo para gerenciar todo o conteúdo sem depender de serviços externos de CMS.
+
+O backend ativo é **`apps/api-java`** (Spring Boot). O repositório também contém **`apps/api`** (NestJS) — a implementação original do backend — **desativada**: não faz parte do fluxo de deploy nem é consumida pelo frontend, mantida só como referência histórica. Ver [`docs/java-migration/`](./docs/java-migration/) para as specs completas de cada módulo e as notas de paridade entre as duas implementações.
 
 O design segue uma estética terminal/hacker: tipografia monospace, animações de digitação e uma paleta dark com acentos em verde-lima (`#bef264`).
 
@@ -34,11 +36,12 @@ O design segue uma estética terminal/hacker: tipografia monospace, animações 
 ### Área Pública
 - Página inicial com animação de grid e apresentação pessoal
 - Página Sobre com seções de perfil, experiências e contato
+- Página de Contato
 - Página de Projetos com card em destaque e grid paginado
 - Blog com card em destaque, grid paginado e página de leitura por slug
 - Leitura estimada e formatação de data em português no blog
-- Renderizador de Markdown embutido (títulos, listas, blocos de código, parágrafos)
 - Badges coloridos com cor de fundo e texto configuráveis
+- Popup de divulgação de evento, configurável pelo painel
 
 ### Painel Administrativo (`/ControlPanel`)
 - **Dashboard** — contagem de projetos, posts, badges e tarefas kanban
@@ -47,25 +50,27 @@ O design segue uma estética terminal/hacker: tipografia monospace, animações 
 - **Badges** — CRUD com seletor de cor, preview ao vivo do badge
 - **Kanban** — board em tempo real com drag-and-drop; tarefas independentes dos projetos/posts
   - 4 colunas: Backlog · To Do · In Progress · Done
-  - 3 tipos de tarefa: Blog (azul `#3C71C8`), Projeto (roxo `#4c1d95`), Custom (cor livre)
+  - 3 tipos de tarefa: Blog, Projeto, Custom (cor livre)
   - Sincronização via WebSocket entre múltiplas abas
-  - Criar, editar e excluir diretamente do card
+- **Todos** — lista de tarefas em duas abas: **Meus** (privadas, só o dono vê/edita) e **Compartilhados** (qualquer usuário autenticado do painel vê/edita)
+  - Sincronização via WebSocket entre múltiplas abas
+- **Evento** — configuração do popup de divulgação (ativar/desativar, textos, imagem, cores)
 
 ---
 
 ## Stack Técnica
 
-### Backend — `apps/api`
+### Backend — `apps/api-java`
 | Tecnologia | Descrição |
 |---|---|
-| NestJS 11 | Framework Node.js com injeção de dependência |
-| Fastify 5 | Adapter HTTP (não Express) |
-| DrizzleORM | ORM type-safe com migrations |
-| drizzle-zod | Geração automática de schemas Zod do DB |
-| BetterAuth | Autenticação com Google OAuth |
-| @nestjs/websockets + platform-ws | Gateway WebSocket nativo |
-| @nestjs/swagger | Documentação OpenAPI 3 |
-| postgres-js | Driver PostgreSQL |
+| Spring Boot 4.1 (Java 21) | Framework principal |
+| Spring Data JPA + Hibernate | ORM |
+| Flyway | Migrations — rodam automaticamente no boot da aplicação |
+| Spring Security (OAuth2 Client + Resource Server) | Login via Google OAuth2, sessão como JWT (HS256) em cookie httpOnly |
+| Spring WebSocket | Handlers nativos (`/ws/kanban`, `/ws/todos`), sem STOMP |
+| springdoc-openapi | Documentação OpenAPI 3 / Swagger UI |
+| Driver PostgreSQL (JDBC) | Banco próprio, separado do que `apps/api` usava |
+| Maven (`./mvnw`) | Build — projeto autocontido, fora do workspace pnpm |
 
 ### Frontend — `apps/web`
 | Tecnologia | Descrição |
@@ -73,10 +78,11 @@ O design segue uma estética terminal/hacker: tipografia monospace, animações 
 | Next.js 16 | App Router, Server Components |
 | React 19 | UI |
 | Tailwind CSS v4 | Utility-first CSS |
-| @base-ui/react | Primitivos UI acessíveis (Dialog, Switch, etc.) |
+| @base-ui/react | Primitivos UI acessíveis (Dialog, Switch, Tabs, etc.) |
 | shadcn/ui | Componentes prontos (Sidebar, Table, Pagination, Card) |
+| next-themes | Provider de tema (atualmente fixo em dark) |
 | @hello-pangea/dnd | Drag-and-drop para o Kanban |
-| magicui | Componentes animados (AnimatedGridPattern) |
+| magicui | Componentes animados (AnimatedGridPattern, ShineBorder) |
 
 ---
 
@@ -84,8 +90,9 @@ O design segue uma estética terminal/hacker: tipografia monospace, animações 
 
 - Node.js >= 20
 - pnpm >= 10
+- JDK 21 (Maven não precisa ser instalado à parte — o projeto usa o wrapper `./mvnw`)
 - PostgreSQL (local ou remoto)
-- Credenciais Google OAuth (para login)
+- Credenciais Google OAuth2 (para login)
 
 ---
 
@@ -96,56 +103,59 @@ O design segue uma estética terminal/hacker: tipografia monospace, animações 
 git clone <url-do-repo>
 cd bruno-gusmao
 
-# Instalar todas as dependências dos workspaces
+# Instalar dependências do workspace pnpm (frontend)
 pnpm install
 ```
+
+`apps/api-java` não faz parte do workspace pnpm — não precisa de passo de instalação; o `./mvnw` resolve as dependências Maven automaticamente na primeira execução.
 
 ---
 
 ## Configuração
 
-### API — `apps/api/.env`
+### API — `apps/api-java/.env`
+
+O Spring Boot **não carrega `.env` sozinho** (diferente do Nest, que usava `dotenv`) — exporte as variáveis pro shell antes de rodar (ver [Rodando o Projeto](#rodando-o-projeto)), ou use `./scripts/vps-setup.sh`/Docker em produção, que já cuidam disso.
 
 ```env
-# Banco de dados PostgreSQL
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/nome_do_banco
+PORT=3001
 
-# BetterAuth — gere um segredo forte (ex: openssl rand -hex 32)
-BETTER_AUTH_SECRET=seu-segredo-aqui
-BETTER_AUTH_URL=http://localhost:3001
+# Banco separado do que apps/api (Nest, desativado) usava.
+DATABASE_URL=jdbc:postgresql://localhost:5432/bruno_gusmao_java
+DATABASE_USERNAME=seu_usuario
+DATABASE_PASSWORD=sua_senha
 
-# Google OAuth — console.cloud.google.com
+# JWT — gere com: openssl rand -base64 32
+JWT_SECRET=seu-segredo-aqui
+JWT_EXPIRATION_DAYS=7
+JWT_COOKIE_NAME=access_token
+
+# Google OAuth2 — console.cloud.google.com
+# Redirect URI a cadastrar: http://localhost:3001/login/oauth2/code/google
 GOOGLE_CLIENT_ID=seu-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=seu-google-client-secret
 
-# Controle de acesso — apenas este email pode se registrar
-ALLOWED_EMAIL=seu@email.com
+# Um ou mais e-mails separados por vírgula — só eles podem logar
+ALLOWED_EMAILS=seu@email.com
 
-# URL do frontend (para CORS)
+# URL do frontend (CORS + redirect pós-login)
 WEB_URL=http://localhost:3000
-
-# Porta da API (padrão: 3001)
-PORT=3001
 ```
 
 ### Web — `apps/web/.env.local`
 
 ```env
-# URL da API
 NEXT_PUBLIC_API_URL=http://localhost:3001
-
-# URL do BetterAuth (mesmo da API)
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=ws://localhost:3001
+API_URL=http://localhost:3001
 ```
 
 ### Banco de Dados
 
-```bash
-# Gerar os arquivos de migration a partir do schema
-pnpm --filter api db:generate
+O Flyway aplica as migrations automaticamente no boot da aplicação — não há comando manual de `generate`/`migrate`. O único passo manual é criar o database (o Postgres não cria sozinho):
 
-# Aplicar as migrations no banco
-pnpm --filter api db:migrate
+```bash
+psql -h localhost -U seu_usuario -c "CREATE DATABASE bruno_gusmao_java;"
 ```
 
 ---
@@ -153,28 +163,30 @@ pnpm --filter api db:migrate
 ## Rodando o Projeto
 
 ```bash
-# Rodar API e Web simultaneamente em modo desenvolvimento
-pnpm dev
+# Terminal 1 — API (Spring Boot)
+cd apps/api-java
+set -a; source .env; set +a
+./mvnw spring-boot:run
 
-# Rodar apenas a API
-pnpm --filter api start:dev
-
-# Rodar apenas o frontend
+# Terminal 2 — Frontend
 pnpm --filter web start:dev
 
-# Build de produção (ambos)
-pnpm build
+# Build de produção (frontend)
+pnpm --filter web build
 
 # Verificar tipos TypeScript
 pnpm typecheck
 ```
+
+> **Não use `pnpm dev`/`pnpm build` na raiz sem filtro.** Esses scripts rodam via Turborepo em todos os workspaces pnpm, incluindo `apps/api` (Nest) — que está desativado e, se subir, entra em conflito de porta com `apps/api-java` (ambos usam 3001). Prefira sempre `pnpm --filter web <script>` para o frontend.
 
 | App | URL |
 |---|---|
 | Frontend | http://localhost:3000 |
 | API | http://localhost:3001/api |
 | Swagger | http://localhost:3001/docs |
-| WebSocket | ws://localhost:3001 |
+| WebSocket Kanban | ws://localhost:3001/ws/kanban |
+| WebSocket Todos | ws://localhost:3001/ws/todos |
 
 ---
 
@@ -183,47 +195,55 @@ pnpm typecheck
 ```
 .
 ├── apps/
-│   ├── api/                        # Backend NestJS
-│   │   └── src/
-│   │       ├── auth/               # Guard de autenticação + controller BetterAuth
-│   │       ├── badges/             # CRUD de badges
-│   │       ├── projects/           # CRUD de projetos
-│   │       ├── posts/              # CRUD de posts
-│   │       ├── kanban/             # Gateway WebSocket
-│   │       ├── kanban-tasks/       # CRUD de tarefas independentes do Kanban
-│   │       ├── db/
-│   │       │   ├── index.ts        # Instância DrizzleORM
-│   │       │   └── schema/         # Definição das tabelas + schemas Zod
-│   │       ├── app.module.ts
-│   │       └── main.ts             # Bootstrap: Fastify, CORS, WS, Swagger
+│   ├── api-java/                   # Backend Spring Boot (ativo)
+│   │   └── src/main/java/dev/brunogusmao/api/
+│   │       ├── auth/                # Google OAuth2, JWT, resolver de cookie
+│   │       ├── badges/               # CRUD de badges
+│   │       ├── projects/             # CRUD de projetos
+│   │       ├── posts/                # CRUD de posts
+│   │       ├── kanban/                # Handlers WebSocket (kanban + todos)
+│   │       ├── kanbantasks/          # CRUD de tarefas independentes do Kanban
+│   │       ├── todos/                # CRUD de todos (modelo de dois usuários)
+│   │       ├── sitesettings/         # Configurações singleton do site
+│   │       ├── common/                # Entidades base, enums compartilhados, exceptions
+│   │       ├── config/                 # Security, CORS, WebSocket, OpenAPI
+│   │       └── ApiApplication.java
+│   │
+│   ├── api/                        # Backend NestJS — DESATIVADO, mantido como referência
 │   │
 │   └── web/                        # Frontend Next.js
 │       └── src/
 │           ├── app/
-│           │   ├── (auth)/         # /login, /register
-│           │   ├── (public)/       # /, /about, /projects, /blog, /blog/[slug]
-│           │   └── (private)/      # /ControlPanel/** (autenticado)
-│           └── components/
-│               ├── Common/         # Componentes reutilizáveis públicos e privados
-│               ├── ControlPanel/   # Componentes exclusivos do painel
-│               └── ui/             # shadcn/ui + magicui
+│           │   ├── (auth)/          # /login
+│           │   ├── (public)/        # /, /about, /contact, /projects, /blog, /blog/[slug]
+│           │   └── (private)/       # /ControlPanel/** (autenticado)
+│           ├── components/
+│           │   ├── Common/          # Componentes reutilizáveis públicos
+│           │   ├── ControlPanel/    # Componentes exclusivos do painel (tabelas, boards)
+│           │   ├── EventPopup/      # Popup de divulgação de evento
+│           │   ├── Header/          # Header público
+│           │   ├── Contact/         # Formulário de contato
+│           │   ├── admin/           # Utilitários compartilhados do painel (confirm-dialog, toast)
+│           │   └── ui/              # shadcn/ui + magicui
+│           └── proxy.ts             # Proteção de rota (`/ControlPanel/**`, `/login`)
 │
 └── packages/
-    └── typescript-config/          # tsconfig base compartilhado
+    └── typescript-config/          # tsconfig base compartilhado (apps/web)
 ```
 
 ### Banco de Dados — Tabelas
 
 | Tabela | Descrição |
 |---|---|
+| `users` | Usuários autenticados via Google OAuth2 (allowlist por e-mail) |
 | `badges` | Tags coloridas reutilizáveis |
 | `projects` | Projetos com visibilidade e status kanban |
 | `posts` | Artigos do blog com conteúdo Markdown |
 | `kanban_tasks` | Tarefas do board Kanban (independentes) |
-| `user` | Gerenciada pelo BetterAuth |
-| `session` | Gerenciada pelo BetterAuth |
-| `account` | Gerenciada pelo BetterAuth |
-| `verification` | Gerenciada pelo BetterAuth |
+| `todos` | Tarefas privadas/compartilhadas do painel (`owner_id` + `shared`) |
+| `site_settings` | Linha singleton com as configurações públicas do site |
+
+Sessão é **stateless** (JWT assinado, sem tabela de sessão persistida) — diferente do BetterAuth do `apps/api` (Nest) desativado.
 
 ---
 
@@ -237,24 +257,22 @@ pnpm typecheck
 | GET | `/api/posts` | Lista posts visíveis |
 | GET | `/api/posts/:slug` | Busca post pelo slug |
 | GET | `/api/kanban-tasks` | Lista todas as tarefas do kanban |
+| GET | `/api/site-settings` | Consulta as configurações públicas do site |
+| GET | `/oauth2/authorization/google` | Inicia o login com Google |
 
-### Protegidas (requer sessão)
+### Protegidas (requer cookie de sessão)
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/api/badges` | Cria badge |
-| PATCH | `/api/badges/:id` | Atualiza badge |
-| DELETE | `/api/badges/:id` | Remove badge |
+| GET | `/api/auth/me` | Dados do usuário autenticado |
+| POST | `/api/auth/logout` | Encerra a sessão (limpa o cookie) |
 | GET | `/api/projects/all` | Lista todos os projetos (incluindo invisíveis) |
-| POST | `/api/projects` | Cria projeto |
-| PATCH | `/api/projects/:id` | Atualiza projeto |
-| DELETE | `/api/projects/:id` | Remove projeto |
+| POST/PATCH/DELETE | `/api/projects[/:id]` | CRUD de projetos |
 | GET | `/api/posts/all` | Lista todos os posts |
-| POST | `/api/posts` | Cria post |
-| PATCH | `/api/posts/:id` | Atualiza post |
-| DELETE | `/api/posts/:id` | Remove post |
-| POST | `/api/kanban-tasks` | Cria tarefa kanban |
-| PATCH | `/api/kanban-tasks/:id` | Atualiza tarefa |
-| DELETE | `/api/kanban-tasks/:id` | Remove tarefa |
+| POST/PATCH/DELETE | `/api/posts[/:id]` | CRUD de posts |
+| POST/PATCH/DELETE | `/api/badges[/:id]` | CRUD de badges |
+| POST/PATCH/DELETE | `/api/kanban-tasks[/:id]` | CRUD de tarefas do kanban |
+| GET/POST/PATCH/DELETE | `/api/todos[/:id]` | CRUD de todos — inclusive o `GET`, já que o resultado depende de quem pergunta |
+| PATCH | `/api/site-settings` | Atualiza as configurações do site |
 
 ---
 
@@ -262,19 +280,19 @@ pnpm typecheck
 
 Acesse `http://localhost:3001/docs` com a API rodando.
 
-**Para autenticar nas rotas protegidas:**
-1. Faça login em `http://localhost:3000/login`
-2. Abra o DevTools → aba **Application** → **Cookies**
-3. Copie o valor de `better-auth.session_token`
-4. Clique em **Authorize** no Swagger e cole o valor no campo **Bearer**
+**Para testar rotas protegidas:**
+1. Faça login em `http://localhost:3000/login` (mesmo navegador)
+2. Abra `http://localhost:3001/docs` nesse mesmo navegador
+
+O cookie httpOnly `access_token` é enviado automaticamente pelo navegador nas chamadas que o Swagger UI faz — não é preciso colar token manualmente. O botão **Authorize** (Bearer) não é usado nesta API: o resolver de token do Spring Security lê exclusivamente do cookie (ver `CookieBearerTokenResolver`), não do header `Authorization`.
 
 ---
 
-## Kanban WebSocket
+## WebSocket
 
-O board Kanban usa WebSocket nativo para sincronização em tempo real entre abas.
+### Kanban — `ws://localhost:3001/ws/kanban`
 
-**Conectar:** `ws://localhost:3001`
+Handshake público (sem autenticação).
 
 **Mover card:**
 ```json
@@ -290,13 +308,25 @@ O board Kanban usa WebSocket nativo para sincronização em tempo real entre aba
 
 **Status possíveis:** `backlog` · `todo` · `in-progress` · `done`
 
-O servidor emite `card-moved` com os mesmos dados para todos os clientes conectados, atualizando o board em tempo real.
+O servidor emite `card-moved` com os mesmos dados para todos os clientes conectados.
+
+### Todos — `ws://localhost:3001/ws/todos`
+
+Handshake **autenticado** — exige um JWT válido no cookie `access_token`; sem isso a conexão é recusada antes do upgrade.
+
+O servidor emite, para os clientes autorizados (dono do todo ou qualquer usuário se `shared: true`):
+
+```json
+{ "event": "todo-created", "data": { "...": "objeto Todo completo" } }
+{ "event": "todo-updated", "data": { "...": "objeto Todo completo" } }
+{ "event": "todo-deleted", "data": { "...": "objeto Todo completo" } }
+```
 
 ---
 
 ## Deploy
 
-O monorepo usa **Turborepo** para orquestrar builds com cache inteligente entre os workspaces.
+O frontend usa **Turborepo** para orquestrar build/lint/typecheck com cache. `apps/api-java` fica fora dessa orquestração — é buildado separadamente via Maven (`./mvnw` local, ou multi-stage Docker em produção).
 
 A aplicação roda em produção numa VPS própria (Docker + Nginx nativo + certbot),
 em `brunogusmao.dev`/`api.brunogusmao.dev`, coexistindo na mesma VPS com o
@@ -318,7 +348,7 @@ evento-gamificacao: [`deploy/DEPLOY-VPS.md`](./deploy/DEPLOY-VPS.md).
 
 # Bruno Gusmão — Fullstack Portfolio
 
-Personal portfolio with a complete admin panel. NestJS + Fastify backend, Next.js 16 App Router frontend, BetterAuth authentication (Google OAuth), real-time Kanban board via WebSocket and drag-and-drop.
+Personal portfolio with a complete admin panel. **pnpm workspaces + Turborepo** monorepo for the frontend, with a **Spring Boot (Java)** backend, Next.js 16 App Router frontend, Google OAuth2 + JWT authentication in an httpOnly cookie, real-time Kanban and Todos via WebSocket and drag-and-drop.
 
 ---
 
@@ -334,13 +364,16 @@ Personal portfolio with a complete admin panel. NestJS + Fastify backend, Next.j
 - [Folder Structure](#folder-structure)
 - [API Routes](#api-routes)
 - [Swagger Documentation](#swagger-documentation)
-- [Kanban WebSocket](#kanban-websocket-1)
+- [WebSocket](#websocket-1)
+- [Deploy](#deploy-1)
 
 ---
 
 ## About
 
-This pnpm workspaces monorepo brings together the REST API and portfolio website. Scripts are orchestrated with `pnpm -r --parallel` — no Turborepo. The goal is to have a centralized place to showcase projects and articles, with an admin panel to manage all content without relying on external CMS services.
+This monorepo brings together the REST API and the portfolio website. The goal is to have a centralized place to showcase projects and articles, with an admin panel to manage all content without relying on external CMS services.
+
+The active backend is **`apps/api-java`** (Spring Boot). The repo also contains **`apps/api`** (NestJS) — the original backend implementation — **deactivated**: not part of the deploy flow and no longer consumed by the frontend, kept only as historical reference. See [`docs/java-migration/`](./docs/java-migration/) for full module specs and parity notes between the two implementations.
 
 The design follows a terminal/hacker aesthetic: monospace typography, typing animations, and a dark palette with lime-green accents (`#bef264`).
 
@@ -351,11 +384,12 @@ The design follows a terminal/hacker aesthetic: monospace typography, typing ani
 ### Public Area
 - Home page with animated grid and personal introduction
 - About page with profile, experience, and contact sections
+- Contact page
 - Projects page with a featured card and paginated grid
 - Blog with a featured card, paginated grid, and reading page by slug
-- Estimated reading time and date formatting in Portuguese on the blog
-- Built-in Markdown renderer (headings, lists, code blocks, paragraphs)
+- Estimated reading time and Portuguese date formatting on the blog
 - Colored badges with configurable background and text color
+- Event announcement popup, configurable from the admin panel
 
 ### Admin Panel (`/ControlPanel`)
 - **Dashboard** — project, post, badge, and kanban task counts
@@ -364,25 +398,27 @@ The design follows a terminal/hacker aesthetic: monospace typography, typing ani
 - **Badges** — CRUD with color picker and live badge preview
 - **Kanban** — real-time board with drag-and-drop; tasks independent from projects/posts
   - 4 columns: Backlog · To Do · In Progress · Done
-  - 3 task types: Blog (blue `#3C71C8`), Project (purple `#4c1d95`), Custom (free color)
+  - 3 task types: Blog, Project, Custom (free color)
   - WebSocket sync across multiple browser tabs
-  - Create, edit, and delete directly from the card
+- **Todos** — two-tab task list: **Mine** (private, owner-only) and **Shared** (visible/editable by any authenticated panel user)
+  - WebSocket sync across multiple browser tabs
+- **Event** — announcement popup configuration (enable/disable, copy, image, colors)
 
 ---
 
 ## Tech Stack
 
-### Backend — `apps/api`
+### Backend — `apps/api-java`
 | Technology | Description |
 |---|---|
-| NestJS 11 | Node.js framework with dependency injection |
-| Fastify 5 | HTTP adapter (not Express) |
-| DrizzleORM | Type-safe ORM with migrations |
-| drizzle-zod | Automatic Zod schema generation from DB |
-| BetterAuth | Authentication with Google OAuth |
-| @nestjs/websockets + platform-ws | Native WebSocket gateway |
-| @nestjs/swagger | OpenAPI 3 documentation |
-| postgres-js | PostgreSQL driver |
+| Spring Boot 4.1 (Java 21) | Main framework |
+| Spring Data JPA + Hibernate | ORM |
+| Flyway | Migrations — run automatically on application boot |
+| Spring Security (OAuth2 Client + Resource Server) | Google OAuth2 login, session as an HS256 JWT in an httpOnly cookie |
+| Spring WebSocket | Native handlers (`/ws/kanban`, `/ws/todos`), no STOMP |
+| springdoc-openapi | OpenAPI 3 / Swagger UI documentation |
+| PostgreSQL driver (JDBC) | Own database, separate from what `apps/api` used |
+| Maven (`./mvnw`) | Build — self-contained project, outside the pnpm workspace |
 
 ### Frontend — `apps/web`
 | Technology | Description |
@@ -390,10 +426,11 @@ The design follows a terminal/hacker aesthetic: monospace typography, typing ani
 | Next.js 16 | App Router, Server Components |
 | React 19 | UI |
 | Tailwind CSS v4 | Utility-first CSS |
-| @base-ui/react | Accessible UI primitives (Dialog, Switch, etc.) |
+| @base-ui/react | Accessible UI primitives (Dialog, Switch, Tabs, etc.) |
 | shadcn/ui | Ready-made components (Sidebar, Table, Pagination, Card) |
+| next-themes | Theme provider (currently locked to dark) |
 | @hello-pangea/dnd | Drag-and-drop for Kanban |
-| magicui | Animated components (AnimatedGridPattern) |
+| magicui | Animated components (AnimatedGridPattern, ShineBorder) |
 
 ---
 
@@ -401,8 +438,9 @@ The design follows a terminal/hacker aesthetic: monospace typography, typing ani
 
 - Node.js >= 20
 - pnpm >= 10
+- JDK 21 (Maven itself doesn't need to be installed — the project ships the `./mvnw` wrapper)
 - PostgreSQL (local or remote)
-- Google OAuth credentials (for login)
+- Google OAuth2 credentials (for login)
 
 ---
 
@@ -413,56 +451,59 @@ The design follows a terminal/hacker aesthetic: monospace typography, typing ani
 git clone <repo-url>
 cd bruno-gusmao
 
-# Install all workspace dependencies
+# Install pnpm workspace dependencies (frontend)
 pnpm install
 ```
+
+`apps/api-java` is not part of the pnpm workspace — no install step needed; `./mvnw` resolves Maven dependencies automatically on first run.
 
 ---
 
 ## Configuration
 
-### API — `apps/api/.env`
+### API — `apps/api-java/.env`
+
+Spring Boot **does not load `.env` on its own** (unlike the Nest backend, which used `dotenv`) — export the variables into the shell before running (see [Running the Project](#running-the-project)), or use `./scripts/vps-setup.sh`/Docker in production, which already handle this.
 
 ```env
-# PostgreSQL database
-DATABASE_URL=postgresql://user:password@localhost:5432/database_name
+PORT=3001
 
-# BetterAuth — generate a strong secret (e.g.: openssl rand -hex 32)
-BETTER_AUTH_SECRET=your-secret-here
-BETTER_AUTH_URL=http://localhost:3001
+# Separate database from what apps/api (Nest, deactivated) used.
+DATABASE_URL=jdbc:postgresql://localhost:5432/bruno_gusmao_java
+DATABASE_USERNAME=your_user
+DATABASE_PASSWORD=your_password
 
-# Google OAuth — console.cloud.google.com
+# JWT — generate with: openssl rand -base64 32
+JWT_SECRET=your-secret-here
+JWT_EXPIRATION_DAYS=7
+JWT_COOKIE_NAME=access_token
+
+# Google OAuth2 — console.cloud.google.com
+# Redirect URI to register: http://localhost:3001/login/oauth2/code/google
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# Access control — only this email can register
-ALLOWED_EMAIL=your@email.com
+# One or more comma-separated emails — only these can log in
+ALLOWED_EMAILS=your@email.com
 
-# Frontend URL (for CORS)
+# Frontend URL (CORS + post-login redirect)
 WEB_URL=http://localhost:3000
-
-# API port (default: 3001)
-PORT=3001
 ```
 
 ### Web — `apps/web/.env.local`
 
 ```env
-# API URL
 NEXT_PUBLIC_API_URL=http://localhost:3001
-
-# BetterAuth URL (same as API)
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=ws://localhost:3001
+API_URL=http://localhost:3001
 ```
 
 ### Database
 
-```bash
-# Generate migration files from schema
-pnpm --filter api db:generate
+Flyway applies migrations automatically on application boot — there's no manual `generate`/`migrate` command. The only manual step is creating the database itself (Postgres won't create it on its own):
 
-# Apply migrations to database
-pnpm --filter api db:migrate
+```bash
+psql -h localhost -U your_user -c "CREATE DATABASE bruno_gusmao_java;"
 ```
 
 ---
@@ -470,28 +511,30 @@ pnpm --filter api db:migrate
 ## Running the Project
 
 ```bash
-# Run API and Web simultaneously in development mode
-pnpm dev
+# Terminal 1 — API (Spring Boot)
+cd apps/api-java
+set -a; source .env; set +a
+./mvnw spring-boot:run
 
-# Run only the API
-pnpm --filter api start:dev
-
-# Run only the frontend
+# Terminal 2 — Frontend
 pnpm --filter web start:dev
 
-# Production build (both)
-pnpm build
+# Production build (frontend)
+pnpm --filter web build
 
 # TypeScript type checking
 pnpm typecheck
 ```
+
+> **Don't use unfiltered `pnpm dev`/`pnpm build` at the repo root.** Those scripts run through Turborepo across every pnpm workspace, including `apps/api` (Nest) — which is deactivated and, if started, collides on port 3001 with `apps/api-java`. Always prefer `pnpm --filter web <script>` for the frontend.
 
 | App | URL |
 |---|---|
 | Frontend | http://localhost:3000 |
 | API | http://localhost:3001/api |
 | Swagger | http://localhost:3001/docs |
-| WebSocket | ws://localhost:3001 |
+| Kanban WebSocket | ws://localhost:3001/ws/kanban |
+| Todos WebSocket | ws://localhost:3001/ws/todos |
 
 ---
 
@@ -500,47 +543,55 @@ pnpm typecheck
 ```
 .
 ├── apps/
-│   ├── api/                        # NestJS Backend
-│   │   └── src/
-│   │       ├── auth/               # Auth guard + BetterAuth controller
-│   │       ├── badges/             # Badges CRUD
-│   │       ├── projects/           # Projects CRUD
-│   │       ├── posts/              # Posts CRUD
-│   │       ├── kanban/             # WebSocket gateway
-│   │       ├── kanban-tasks/       # Independent Kanban tasks CRUD
-│   │       ├── db/
-│   │       │   ├── index.ts        # DrizzleORM instance
-│   │       │   └── schema/         # Table definitions + Zod schemas
-│   │       ├── app.module.ts
-│   │       └── main.ts             # Bootstrap: Fastify, CORS, WS, Swagger
+│   ├── api-java/                   # Spring Boot backend (active)
+│   │   └── src/main/java/dev/brunogusmao/api/
+│   │       ├── auth/                # Google OAuth2, JWT, cookie resolver
+│   │       ├── badges/               # Badges CRUD
+│   │       ├── projects/             # Projects CRUD
+│   │       ├── posts/                # Posts CRUD
+│   │       ├── kanban/                # WebSocket handlers (kanban + todos)
+│   │       ├── kanbantasks/          # Independent Kanban tasks CRUD
+│   │       ├── todos/                # Todos CRUD (two-user model)
+│   │       ├── sitesettings/         # Singleton site settings
+│   │       ├── common/                # Base entities, shared enums, exceptions
+│   │       ├── config/                 # Security, CORS, WebSocket, OpenAPI
+│   │       └── ApiApplication.java
 │   │
-│   └── web/                        # Next.js Frontend
+│   ├── api/                        # NestJS backend — DEACTIVATED, kept as reference
+│   │
+│   └── web/                        # Next.js frontend
 │       └── src/
 │           ├── app/
-│           │   ├── (auth)/         # /login, /register
-│           │   ├── (public)/       # /, /about, /projects, /blog, /blog/[slug]
-│           │   └── (private)/      # /ControlPanel/** (authenticated)
-│           └── components/
-│               ├── Common/         # Reusable components (public + private)
-│               ├── ControlPanel/   # Panel-exclusive components
-│               └── ui/             # shadcn/ui + magicui
+│           │   ├── (auth)/          # /login
+│           │   ├── (public)/        # /, /about, /contact, /projects, /blog, /blog/[slug]
+│           │   └── (private)/       # /ControlPanel/** (authenticated)
+│           ├── components/
+│           │   ├── Common/          # Reusable public components
+│           │   ├── ControlPanel/    # Panel-exclusive components (tables, boards)
+│           │   ├── EventPopup/      # Event announcement popup
+│           │   ├── Header/          # Public header
+│           │   ├── Contact/         # Contact form
+│           │   ├── admin/           # Shared panel utilities (confirm-dialog, toast)
+│           │   └── ui/              # shadcn/ui + magicui
+│           └── proxy.ts             # Route protection (`/ControlPanel/**`, `/login`)
 │
 └── packages/
-    └── typescript-config/          # Shared tsconfig base
+    └── typescript-config/          # Shared tsconfig base (apps/web)
 ```
 
 ### Database Tables
 
 | Table | Description |
 |---|---|
+| `users` | Users authenticated via Google OAuth2 (email allowlist) |
 | `badges` | Reusable colored tags |
 | `projects` | Projects with visibility and kanban status |
 | `posts` | Blog articles with Markdown content |
 | `kanban_tasks` | Kanban board tasks (independent) |
-| `user` | Managed by BetterAuth |
-| `session` | Managed by BetterAuth |
-| `account` | Managed by BetterAuth |
-| `verification` | Managed by BetterAuth |
+| `todos` | Private/shared panel tasks (`owner_id` + `shared`) |
+| `site_settings` | Singleton row holding the site's public settings |
+
+Sessions are **stateless** (signed JWT, no persisted session table) — unlike the deactivated `apps/api` (Nest)'s BetterAuth.
 
 ---
 
@@ -554,24 +605,22 @@ pnpm typecheck
 | GET | `/api/posts` | List visible posts |
 | GET | `/api/posts/:slug` | Get post by slug |
 | GET | `/api/kanban-tasks` | List all kanban tasks |
+| GET | `/api/site-settings` | Get the site's public settings |
+| GET | `/oauth2/authorization/google` | Starts the Google login flow |
 
-### Protected (requires session)
+### Protected (requires session cookie)
 | Method | Route | Description |
 |---|---|---|
-| POST | `/api/badges` | Create badge |
-| PATCH | `/api/badges/:id` | Update badge |
-| DELETE | `/api/badges/:id` | Delete badge |
+| GET | `/api/auth/me` | Current authenticated user |
+| POST | `/api/auth/logout` | Ends the session (clears the cookie) |
 | GET | `/api/projects/all` | List all projects (including hidden) |
-| POST | `/api/projects` | Create project |
-| PATCH | `/api/projects/:id` | Update project |
-| DELETE | `/api/projects/:id` | Delete project |
+| POST/PATCH/DELETE | `/api/projects[/:id]` | Projects CRUD |
 | GET | `/api/posts/all` | List all posts |
-| POST | `/api/posts` | Create post |
-| PATCH | `/api/posts/:id` | Update post |
-| DELETE | `/api/posts/:id` | Delete post |
-| POST | `/api/kanban-tasks` | Create kanban task |
-| PATCH | `/api/kanban-tasks/:id` | Update task |
-| DELETE | `/api/kanban-tasks/:id` | Delete task |
+| POST/PATCH/DELETE | `/api/posts[/:id]` | Posts CRUD |
+| POST/PATCH/DELETE | `/api/badges[/:id]` | Badges CRUD |
+| POST/PATCH/DELETE | `/api/kanban-tasks[/:id]` | Kanban tasks CRUD |
+| GET/POST/PATCH/DELETE | `/api/todos[/:id]` | Todos CRUD — including `GET`, since the result depends on who's asking |
+| PATCH | `/api/site-settings` | Update the site's settings |
 
 ---
 
@@ -579,19 +628,19 @@ pnpm typecheck
 
 Visit `http://localhost:3001/docs` with the API running.
 
-**To authenticate on protected routes:**
-1. Log in at `http://localhost:3000/login`
-2. Open DevTools → **Application** tab → **Cookies**
-3. Copy the value of `better-auth.session_token`
-4. Click **Authorize** in Swagger and paste the value in the **Bearer** field
+**To test protected routes:**
+1. Log in at `http://localhost:3000/login` (same browser)
+2. Open `http://localhost:3001/docs` in that same browser
+
+The httpOnly `access_token` cookie is sent automatically by the browser on the requests Swagger UI makes — no need to paste a token manually. The **Authorize** (Bearer) button isn't used on this API: Spring Security's token resolver reads exclusively from the cookie (see `CookieBearerTokenResolver`), not from the `Authorization` header.
 
 ---
 
-## Kanban WebSocket
+## WebSocket
 
-The Kanban board uses native WebSocket for real-time synchronization across tabs.
+### Kanban — `ws://localhost:3001/ws/kanban`
 
-**Connect:** `ws://localhost:3001`
+Public handshake (no authentication).
 
 **Move a card:**
 ```json
@@ -607,13 +656,25 @@ The Kanban board uses native WebSocket for real-time synchronization across tabs
 
 **Available statuses:** `backlog` · `todo` · `in-progress` · `done`
 
-The server emits `card-moved` with the same data to all connected clients, updating the board in real time.
+The server emits `card-moved` with the same data to all connected clients.
+
+### Todos — `ws://localhost:3001/ws/todos`
+
+**Authenticated** handshake — requires a valid JWT in the `access_token` cookie; without it the connection is refused before the upgrade.
+
+The server emits, to authorized clients (the todo's owner, or any client if `shared: true`):
+
+```json
+{ "event": "todo-created", "data": { "...": "full Todo object" } }
+{ "event": "todo-updated", "data": { "...": "full Todo object" } }
+{ "event": "todo-deleted", "data": { "...": "full Todo object" } }
+```
 
 ---
 
 ## Deploy
 
-The monorepo uses **Turborepo** to orchestrate builds with intelligent cross-workspace caching.
+The frontend uses **Turborepo** to orchestrate build/lint/typecheck with caching. `apps/api-java` is outside that orchestration — it's built separately via Maven (`./mvnw` locally, or a multi-stage Docker build in production).
 
 The app runs in production on a dedicated VPS (Docker + native Nginx + certbot)
 at `brunogusmao.dev`/`api.brunogusmao.dev`, coexisting on the same VPS with the
