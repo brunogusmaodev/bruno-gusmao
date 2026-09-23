@@ -54,6 +54,12 @@ app:
     jwt-expiration-days: ${JWT_EXPIRATION_DAYS:7}
     # Nome do cookie httpOnly onde o JWT é entregue ao browser.
     jwt-cookie-name: ${JWT_COOKIE_NAME:access_token}
+    # Domain do cookie do JWT. Vazio (default) = host-only, só serve pra quem setou o
+    # cookie — funciona em dev (localhost) mas QUEBRA em prod, onde a API fica em
+    # api.brunogusmao.dev e o front em brunogusmao.dev: sem isso o cookie nunca chega ao
+    # front e o PrivateLayout manda de volta pro /login mesmo com login OK. Em prod, setar
+    # COOKIE_DOMAIN=brunogusmao.dev (cobre apex + api./www.).
+    cookie-domain: ${COOKIE_DOMAIN:}
   # Origem do frontend Next.js — usada em CORS e no redirect pós-login OAuth2.
   web-url: ${WEB_URL:http://localhost:3000}
 
