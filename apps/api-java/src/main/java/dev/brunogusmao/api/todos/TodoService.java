@@ -56,6 +56,7 @@ public class TodoService {
         todo.setTitle(request.title());
         todo.setDescription(request.description());
         todo.setShared(request.shared() != null && request.shared());
+        todo.setDueAt(request.dueAt());
         // owner sempre vem do usuário autenticado (@CurrentUser), nunca do DTO — o DTO de
         // criação nem tem campo ownerId, de propósito.
         todo.setOwner(owner);
@@ -80,6 +81,14 @@ public class TodoService {
         }
         if (request.shared() != null) {
             todo.setShared(request.shared());
+        }
+        if (Boolean.TRUE.equals(request.clearDueAt())) {
+            todo.setDueAt(null);
+            todo.setNotifiedAt(null);
+        } else if (request.dueAt() != null && !request.dueAt().equals(todo.getDueAt())) {
+            todo.setDueAt(request.dueAt());
+            // Novo horário = novo lembrete.
+            todo.setNotifiedAt(null);
         }
 
         Todo saved = todoRepository.save(todo);

@@ -60,6 +60,13 @@ app:
     # front e o PrivateLayout manda de volta pro /login mesmo com login OK. Em prod, setar
     # COOKIE_DOMAIN=brunogusmao.dev (cobre apex + api./www.).
     cookie-domain: ${COOKIE_DOMAIN:}
+  # Web Push (lembretes de todos). Gerar com: npx web-push generate-vapid-keys
+  # Vazio = push desabilitado (a API sobe normalmente, só não envia notificações).
+  push:
+    vapid-public-key: ${VAPID_PUBLIC_KEY:}
+    vapid-private-key: ${VAPID_PRIVATE_KEY:}
+    subject: ${VAPID_SUBJECT:mailto:admin@brunogusmao.dev}
+    reminder-interval-ms: ${TODO_REMINDER_INTERVAL_MS:30000}
   # Origem do frontend Next.js — usada em CORS e no redirect pós-login OAuth2.
   web-url: ${WEB_URL:http://localhost:3000}
 

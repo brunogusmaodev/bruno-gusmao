@@ -3,6 +3,8 @@ package dev.brunogusmao.api.todos.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
+
 /**
  * Corpo do {@code POST /api/todos}. De propósito, NÃO tem campo {@code ownerId} — o dono
  * é sempre o usuário autenticado (ver {@code TodoService#create}), nunca algo vindo do
@@ -16,6 +18,8 @@ public record TodoCreateRequest(
         @Size(max = 1000)
         String description,
 
-        Boolean shared
+        Boolean shared,
+
+        Instant dueAt
 ) {
 }

@@ -217,6 +217,41 @@ class TodoControllerIT {
                 .andExpect(jsonPath("$.shared").value(true));
     }
 
+    // ---- Vencimento (dueAt) ----
+
+    @Test
+    void createAndUpdateDueAt() throws Exception {
+        String createBody = """
+                {"title":"Com vencimento","dueAt":"2030-01-15T12:30:00Z"}
+                """;
+        String response = mockMvc.perform(post("/api/todos").cookie(cookieA)
+                        .contentType("application/json")
+                        .content(createBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.dueAt").value("2030-01-15T12:30:00Z"))
+                .andReturn().getResponse().getContentAsString();
+        UUID todoId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
+
+        // PATCH sem dueAt não mexe no vencimento.
+        mockMvc.perform(patch("/api/todos/" + todoId).cookie(cookieA)
+                        .contentType("application/json")
+                        .content("{\"done\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dueAt").value("2030-01-15T12:30:00Z"));
+
+        mockMvc.perform(patch("/api/todos/" + todoId).cookie(cookieA)
+                        .contentType("application/json")
+                        .content("{\"dueAt\":\"2030-02-01T08:00:00Z\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dueAt").value("2030-02-01T08:00:00Z"));
+
+        mockMvc.perform(patch("/api/todos/" + todoId).cookie(cookieA)
+                        .contentType("application/json")
+                        .content("{\"clearDueAt\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dueAt").isEmpty());
+    }
+
     // ---- 404 ----
 
     @Test

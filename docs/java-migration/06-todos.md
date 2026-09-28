@@ -18,6 +18,8 @@
 | `done` | `boolean` | `nullable=false, default=false` |
 | `shared` | `boolean` | `nullable=false, default=false` |
 | `owner` | `@ManyToOne(optional=false)` → `User` | `nullable=false, onDelete=CASCADE` |
+| `dueAt` | `Instant` | nullable — data/hora de vencimento (V8) |
+| `notifiedAt` | `Instant` | nullable — quando o lembrete push foi enviado; não exposto na API (V8) |
 | `createdAt`/`updatedAt` | `Instant` | via `AuditableEntity` |
 
 ## Endpoints
@@ -28,6 +30,8 @@
 | POST | `/api/todos` | autenticado | Cria; `owner` sempre setado a partir do usuário autenticado |
 | PATCH | `/api/todos/{id}` | autenticado | 404 se não existir; 403 se privado e não for o dono |
 | DELETE | `/api/todos/{id}` | autenticado | Mesma regra de 403/404 do PATCH |
+
+Lembretes push usam também `/api/push/*` (módulo `push/`): `GET /api/push/public-key` (503 sem VAPID configurado), `POST /api/push/subscriptions` (upsert por `endpoint`, vinculado ao usuário atual) e `DELETE /api/push/subscriptions` (body `{endpoint}`, só remove se for do usuário atual).
 
 **Toda rota exige autenticação, inclusive o GET** — diferente do padrão público/admin de Badges/Projects/Posts/KanbanTasks, porque a resposta do GET depende de quem pergunta.
 
@@ -44,6 +48,10 @@
   2. **403 (`ForbiddenException`) se `!todo.isShared() && !todo.getOwner().getId().equals(userId)`** — um todo privado só pode ser mexido pelo dono; um todo compartilhado pode ser mexido por **qualquer** usuário autenticado do painel (não só o dono). Essa é a regra central do modelo de dois usuários — replicar exatamente, é o comportamento mais importante deste módulo inteiro.
 - **Update é merge parcial, não substituição total.** O DTO de update em Bean Validation não tem o conceito de "default" que o Zod tem (não existe o risco do `.partial()` do Nest resetar `shared` silenciosamente — ver nota do Nest abaixo), mas o `TodoService.update()` ainda deve só sobrescrever campos não-nulos do `TodoUpdateRequest`, nunca substituir o objeto inteiro — um PATCH que não envia `shared` não deve alterar o valor atual do campo.
 
+- **Vencimento (`dueAt`)**: opcional no POST e no PATCH. Como `null` no PATCH significa "não mexe", limpar o vencimento exige `clearDueAt: true`. Qualquer mudança de `dueAt` (ou limpeza) zera `notifiedAt`, pra o lembrete disparar de novo no novo horário. A listagem ordena por `dueAt ASC NULLS LAST, createdAt`.
+- **Lembretes (`TodoReminderScheduler`)**: `@Scheduled` a cada 30s (`app.push.reminder-interval-ms`) busca `done = false AND notifiedAt IS NULL AND dueAt <= now`. Privado → push só pro dono; compartilhado → push pra **todas** as assinaturas. `notifiedAt` é gravado mesmo se o envio falhar (evita reenvio em loop). Assinaturas que respondem 404/410 são apagadas.
+- **Web Push**: `PushNotificationService` usa `nl.martijndwars:web-push` (VAPID, `aes128gcm`). Chaves via `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT` (gerar com `npx web-push generate-vapid-keys`); sem chaves, o envio vira no-op e a API sobe normalmente. No front, o service worker (`apps/web/src/sw.ts`) exibe a notificação; no iOS só funciona com o PWA instalado na Tela de Início (16.4+).
+
 ## Notas de paridade com o Nest
 
 - No Nest, o schema de update (`updateTodoSchema`) é construído **separado** do de insert (não deriva de `.partial()`) porque o `.default(false)` de `shared` sobreviveria ao `.partial()` e resetaria o campo silenciosamente em PATCHs que não o enviam. Em Java/Bean Validation esse risco específico não existe (DTOs não têm "default" implícito), mas o cuidado equivalente é: **nunca** usar um `set()` genérico que sobrescreve todos os campos da entity a partir do DTO — sempre merge campo a campo, só quando não-nulo.
@@ -56,6 +64,7 @@
 - [x] DTOs: `TodoCreateRequest` (sem `ownerId`), `TodoUpdateRequest` (todos os campos opcionais), `TodoResponse` (inclui `ownerId`, `shared`)
 - [x] `TodoService` (`findAllForUser`, `create` com owner forçado, `update`/`remove` via `assertMutable`)
 - [x] `TodoController` (`@RequestMapping("/api/todos")`, usa `@CurrentUser` em todas as rotas)
+- [x] Flyway `V8__todos_due_at_and_push.sql` (`due_at`, `notified_at`, tabela `push_subscriptions`) + `TodoReminderScheduler` + módulo `push/` — testados em `TodoControllerIT`, `TodoReminderSchedulerIT`, `PushControllerIT`
 - [x] Testes de integração: GET só mostra próprios + compartilhados; criar sempre seta owner = usuário autenticado (mesmo se o client tentar mandar outro); PATCH/DELETE de todo privado de outro usuário → 403; PATCH/DELETE de todo compartilhado de outro usuário → 200; PATCH parcial não reseta `shared` quando omitido
 
 ## Notas de implementação

@@ -44,6 +44,25 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
 
+    <!-- Web Push (VAPID) para lembretes de todos. O web-push traz bcprov-jdk15on
+         (descontinuado); troca pelo jdk18on, mesmos pacotes org.bouncycastle. -->
+    <dependency>
+      <groupId>nl.martijndwars</groupId>
+      <artifactId>web-push</artifactId>
+      <version>5.1.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.81</version>
+    </dependency>
+
     <!-- Persistence -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

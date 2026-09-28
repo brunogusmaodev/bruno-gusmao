@@ -12,6 +12,7 @@ public record TodoResponse(
         boolean done,
         boolean shared,
         UUID ownerId,
+        Instant dueAt,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -24,6 +25,7 @@ public record TodoResponse(
                 todo.isDone(),
                 todo.isShared(),
                 todo.getOwner().getId(),
+                todo.getDueAt(),
                 todo.getCreatedAt(),
                 todo.getUpdatedAt()
         );

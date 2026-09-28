@@ -17,6 +17,7 @@ Consolida as migrations que cada módulo cria individualmente — uma migration 
 | `V5__create_kanban_tasks.sql` | [05-kanban-tasks.md](05-kanban-tasks.md) | `kanban_tasks` |
 | `V6__create_todos.sql` | [06-todos.md](06-todos.md) | `todos` (FK → `users`, `ON DELETE CASCADE`) |
 | `V7__create_site_settings.sql` | [07-site-settings.md](07-site-settings.md) | `site_settings` |
+| `V8__todos_due_at_and_push.sql` | [06-todos.md](06-todos.md) | `todos.due_at`/`notified_at` + `push_subscriptions` (FK → `users`, `ON DELETE CASCADE`) |
 
 Local: `apps/api-java/src/main/resources/db/migration/`.
 

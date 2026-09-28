@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -50,6 +51,12 @@ public class Todo extends AuditableEntity {
     @JoinColumn(name = "owner_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User owner;
+
+    @Column(name = "due_at")
+    private Instant dueAt;
+
+    @Column(name = "notified_at")
+    private Instant notifiedAt;
 
     public UUID getId() {
         return id;
@@ -93,5 +100,21 @@ public class Todo extends AuditableEntity {
 
     public void setOwner(User owner) {
         this.owner = owner;
+    }
+
+    public Instant getDueAt() {
+        return dueAt;
+    }
+
+    public void setDueAt(Instant dueAt) {
+        this.dueAt = dueAt;
+    }
+
+    public Instant getNotifiedAt() {
+        return notifiedAt;
+    }
+
+    public void setNotifiedAt(Instant notifiedAt) {
+        this.notifiedAt = notifiedAt;
     }
 }
