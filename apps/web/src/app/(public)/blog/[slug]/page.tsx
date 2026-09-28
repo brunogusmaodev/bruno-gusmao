@@ -139,11 +139,11 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     .filter(Boolean);
 
   return (
-    <main className="flex flex-col items-center justify-center max-w-[80%] gap-6 m-auto">
+    <main className="flex flex-col items-center justify-center w-full sm:max-w-[80%] gap-6 m-auto">
       <div className="flex items-start w-full py-2">
         <TypingAnimation
           duration={200}
-          className="font-heading font-semibold text-primary text-6xl text-left"
+          className="font-heading font-semibold text-primary text-4xl sm:text-6xl text-left wrap-break-word"
           aria-hidden="true"
         >
           POST_

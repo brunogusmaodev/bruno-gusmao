@@ -57,6 +57,7 @@ public class TodoService {
         todo.setDescription(request.description());
         todo.setShared(request.shared() != null && request.shared());
         todo.setDueAt(request.dueAt());
+        todo.setAllDay(Boolean.TRUE.equals(request.allDay()));
         // owner sempre vem do usuário autenticado (@CurrentUser), nunca do DTO — o DTO de
         // criação nem tem campo ownerId, de propósito.
         todo.setOwner(owner);
@@ -82,15 +83,24 @@ public class TodoService {
         if (request.shared() != null) {
             todo.setShared(request.shared());
         }
-        if (Boolean.TRUE.equals(request.clearDueAt())) {
-            todo.setDueAt(null);
-            todo.setNotifiedAt(null);
-        } else if (request.dueAt() != null && !request.dueAt().equals(todo.getDueAt())) {
+        if (request.dueAt() != null && !request.dueAt().equals(todo.getDueAt())) {
             todo.setDueAt(request.dueAt());
             // Novo horário = novo lembrete.
             todo.setNotifiedAt(null);
         }
+        if (request.allDay() != null) {
+            todo.setAllDay(request.allDay());
+        }
 
+        Todo saved = todoRepository.save(todo);
+        TodoResponse response = TodoResponse.fromEntity(saved);
+        todosWebSocketHandler.broadcast("todo-updated", response);
+        return response;
+    }
+
+    public TodoResponse toggleDone(UUID id, UUID userId) {
+        Todo todo = assertMutable(id, userId);
+        todo.setDone(!todo.isDone());
         Todo saved = todoRepository.save(todo);
         TodoResponse response = TodoResponse.fromEntity(saved);
         todosWebSocketHandler.broadcast("todo-updated", response);

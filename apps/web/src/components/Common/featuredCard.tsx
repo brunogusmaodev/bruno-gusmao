@@ -25,7 +25,7 @@ export default function FeaturedCard({
   children,
 }: FeaturedCardProps) {
   return (
-    <Card className="relative w-[50%] h-full overflow-hidden p-0 gap-0 bg-secondary">
+    <Card className="relative w-full sm:w-[70%] lg:w-[50%] h-full overflow-hidden p-0 gap-0 bg-secondary">
       <ShineBorder shineColor={["#e2e8f0", "#818cf8", "#c4b5fd"]} className="z-40" />
 
       <div className="absolute inset-0">
@@ -43,7 +43,7 @@ export default function FeaturedCard({
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
       </div>
 
-      <div className="relative flex flex-col justify-end gap-3 h-full p-6">
+      <div className="relative flex flex-col justify-end gap-3 h-full p-4 sm:p-6">
         <div className="flex flex-col gap-2">
           <h2 className="text-white font-semibold text-lg leading-snug line-clamp-1">{title}</h2>
           <p className="text-white/80 text-sm line-clamp-3">{description}</p>
@@ -56,7 +56,7 @@ export default function FeaturedCard({
           )}
         </div>
         {children && (
-          <div className="flex items-center gap-3">{children}</div>
+          <div className="flex flex-wrap items-center gap-3">{children}</div>
         )}
       </div>
     </Card>

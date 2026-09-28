@@ -61,6 +61,12 @@ public class TodoController {
         return todoService.update(id, request, user.id());
     }
 
+    @PatchMapping("/{id}/toggle")
+    @Operation(summary = "Alternar concluído", description = "Inverte o status done do todo (concluído ↔ pendente). Mesma regra de permissão do PATCH.")
+    public TodoResponse toggle(@PathVariable UUID id, @CurrentUser CurrentUserPrincipal user) {
+        return todoService.toggleDone(id, user.id());
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir todo", description = "Remove um todo permanentemente. Só o dono pode excluir um todo privado; um todo compartilhado pode ser excluído por qualquer usuário autenticado.")
     public TodoResponse remove(@PathVariable UUID id, @CurrentUser CurrentUserPrincipal user) {

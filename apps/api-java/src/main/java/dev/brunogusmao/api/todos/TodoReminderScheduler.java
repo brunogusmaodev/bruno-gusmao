@@ -36,7 +36,7 @@ public class TodoReminderScheduler {
                     todo.getTitle(),
                     todo.getDescription() != null && !todo.getDescription().isBlank()
                             ? todo.getDescription()
-                            : (todo.isShared() ? "Tarefa compartilhada vencendo agora" : "Sua tarefa está vencendo agora"),
+                            : reminderBody(todo),
                     "/ControlPanel/todos",
                     "todo-" + todo.getId());
             if (todo.isShared()) {
@@ -46,5 +46,12 @@ public class TodoReminderScheduler {
             }
             todo.setNotifiedAt(now);
         }
+    }
+
+    private static String reminderBody(Todo todo) {
+        if (todo.isAllDay()) {
+            return todo.isShared() ? "Tarefa compartilhada para hoje" : "Sua tarefa é para hoje";
+        }
+        return todo.isShared() ? "Tarefa compartilhada vencendo agora" : "Sua tarefa está vencendo agora";
     }
 }

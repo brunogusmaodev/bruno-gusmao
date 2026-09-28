@@ -17,7 +17,7 @@ Plano completo (contexto, decisões de arquitetura, roteiro): `/home/bruno/.clau
 | Todos | [06-todos.md](06-todos.md) | ✅ Concluído (testado) | Auth |
 | Site Settings | [07-site-settings.md](07-site-settings.md) | ✅ Concluído (testado) | Arquitetura |
 | Kanban WebSocket | [08-kanban-websocket.md](08-kanban-websocket.md) | ✅ Concluído (Kanban testado; `/ws/todos` verificado por leitura + build, sem IT dedicado) | Projects, Posts, Kanban Tasks, Todos, Auth |
-| Database/Flyway | [09-database-flyway.md](09-database-flyway.md) | ✅ V1–V8 aplicadas e validadas | Todos os módulos acima |
+| Database/Flyway | [09-database-flyway.md](09-database-flyway.md) | ✅ V1–V9 aplicadas e validadas | Todos os módulos acima |
 
 **Migração completa** — todos os 9 specs implementados e verificados. **"Testado" significa**: `./mvnw verify` (não `./mvnw test`!) roda de verdade contra Postgres real via Testcontainers. **Achado importante desta sessão**: todos os testes de integração seguem a convenção `*ControllerIT.java`/`*IT.java`, que é o padrão do plugin **Failsafe**, não do Surefire — `./mvnw test` sozinho só executa classes terminadas em `Test` (ou seja, só `AuthIntegrationTest`) e ignora silenciosamente todos os outros módulos. O `pom.xml` já tem `maven-failsafe-plugin` configurado; **sempre use `./mvnw verify` para rodar a suíte completa**. Confirmado com uma rodada limpa do zero: **BUILD SUCCESS, 47/47 testes passando** (42 via Failsafe nos 8 módulos `*IT.java` + 5 via Surefire em `AuthIntegrationTest`).
 

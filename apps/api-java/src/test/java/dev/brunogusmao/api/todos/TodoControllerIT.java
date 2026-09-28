@@ -98,7 +98,7 @@ class TodoControllerIT {
 
     @Test
     void createWithoutCookieReturns401() throws Exception {
-        String body = objectMapper.writeValueAsString(new TodoCreateBody("Sem cookie", null, null));
+        String body = objectMapper.writeValueAsString(new TodoCreateBody("Sem cookie", null, null, "2030-01-01T12:00:00Z"));
 
         mockMvc.perform(post("/api/todos")
                         .contentType("application/json")
@@ -186,7 +186,7 @@ class TodoControllerIT {
         // campo extra chamado "ownerId", o Jackson simplesmente ignora (não existe no
         // record) e o owner persistido é sempre o usuário do cookie.
         String bodyWithForeignOwnerId = """
-                {"title":"Tenta forjar owner","ownerId":"%s"}
+                {"title":"Tenta forjar owner","dueAt":"2030-01-01T12:00:00Z","ownerId":"%s"}
                 """.formatted(userB.getId());
 
         String response = mockMvc.perform(post("/api/todos").cookie(cookieA)
@@ -229,6 +229,7 @@ class TodoControllerIT {
                         .content(createBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.dueAt").value("2030-01-15T12:30:00Z"))
+                .andExpect(jsonPath("$.allDay").value(false))
                 .andReturn().getResponse().getContentAsString();
         UUID todoId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
 
@@ -245,11 +246,60 @@ class TodoControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dueAt").value("2030-02-01T08:00:00Z"));
 
+        // Remover a hora = virar tarefa de dia inteiro.
         mockMvc.perform(patch("/api/todos/" + todoId).cookie(cookieA)
                         .contentType("application/json")
-                        .content("{\"clearDueAt\":true}"))
+                        .content("{\"allDay\":true}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.dueAt").isEmpty());
+                .andExpect(jsonPath("$.allDay").value(true))
+                .andExpect(jsonPath("$.dueAt").value("2030-02-01T08:00:00Z"));
+    }
+
+    @Test
+    void createAllDayTodo() throws Exception {
+        mockMvc.perform(post("/api/todos").cookie(cookieA)
+                        .contentType("application/json")
+                        .content("{\"title\":\"Dia inteiro\",\"dueAt\":\"2030-03-10T12:00:00Z\",\"allDay\":true}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.allDay").value(true));
+    }
+
+    @Test
+    void createWithoutDateReturns400() throws Exception {
+        mockMvc.perform(post("/api/todos").cookie(cookieA)
+                        .contentType("application/json")
+                        .content("{\"title\":\"Sem data\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ---- Toggle concluído ----
+
+    @Test
+    void toggleFlipsDoneBackAndForth() throws Exception {
+        UUID todoId = createTodo(cookieA, "Alternar", null, false);
+
+        mockMvc.perform(patch("/api/todos/" + todoId + "/toggle").cookie(cookieA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.done").value(true));
+
+        mockMvc.perform(patch("/api/todos/" + todoId + "/toggle").cookie(cookieA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.done").value(false));
+    }
+
+    @Test
+    void toggleRespectsOwnershipRules() throws Exception {
+        UUID privateId = createTodo(cookieA, "Privada de A", null, false);
+        mockMvc.perform(patch("/api/todos/" + privateId + "/toggle").cookie(cookieB))
+                .andExpect(status().isForbidden());
+
+        UUID sharedId = createTodo(cookieA, "Compartilhada de A", null, true);
+        mockMvc.perform(patch("/api/todos/" + sharedId + "/toggle").cookie(cookieB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.done").value(true));
+
+        mockMvc.perform(patch("/api/todos/" + UUID.randomUUID() + "/toggle").cookie(cookieA))
+                .andExpect(status().isNotFound());
     }
 
     // ---- 404 ----
@@ -273,7 +323,7 @@ class TodoControllerIT {
     // ---- Helpers ----
 
     private UUID createTodo(Cookie authorCookie, String title, String description, boolean shared) throws Exception {
-        String body = objectMapper.writeValueAsString(new TodoCreateBody(title, description, shared));
+        String body = objectMapper.writeValueAsString(new TodoCreateBody(title, description, shared, "2030-01-01T12:00:00Z"));
 
         String response = mockMvc.perform(post("/api/todos").cookie(authorCookie)
                         .contentType("application/json")
@@ -284,7 +334,7 @@ class TodoControllerIT {
         return UUID.fromString(objectMapper.readTree(response).get("id").asText());
     }
 
-    private record TodoCreateBody(String title, String description, Boolean shared) {
+    private record TodoCreateBody(String title, String description, Boolean shared, String dueAt) {
     }
 
     private record TodoUpdateBody(String title, String description, Boolean shared, Boolean done) {

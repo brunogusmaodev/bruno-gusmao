@@ -159,7 +159,7 @@ projects       — id, name, slug, summary, image, projectUrl, repoUrl,
 posts          — id, name, slug, summary, imageUrl, content,
                  badge1Id, badge2Id, badge3Id, visible, featured, kanbanStatus, createdAt, updatedAt
 kanban_tasks   — id, title, description, taskType, color, kanbanStatus, createdAt, updatedAt
-todos          — id, title, description, done, shared, ownerId, dueAt, notifiedAt, createdAt, updatedAt
+todos          — id, title, description, done, shared, ownerId, dueAt, allDay, notifiedAt, createdAt, updatedAt
 push_subscriptions — id, userId, endpoint, p256dh, auth, userAgent, createdAt, updatedAt (Web Push, só api-java)
 site_settings  — id, eventPopupEnabled, eventName, eventDescription, eventImageUrl,
                  eventBgColor, eventTextColor, updatedAt
@@ -175,7 +175,7 @@ verification   — gerenciado pelo BetterAuth
 
 **Todos** é a única tabela com dados por usuário: `ownerId` (FK → `user.id`, `onDelete: cascade`) marca o dono, e `shared` (boolean) decide se a tarefa aparece pra todo mundo autenticado ou só pro dono. Regra de leitura: `WHERE shared = true OR ownerId = <usuário atual>`. Regra de escrita: só o dono pode editar/apagar uma tarefa privada; uma tarefa compartilhada pode ser editada por qualquer usuário autenticado do painel — ver `apps/api/src/todos/todos.service.ts` (`assertMutable`). Esse é o padrão de referência para suportar múltiplos usuários no painel.
 
-**Lembretes de todos** (só `apps/api-java`): `dueAt` opcional; o `TodoReminderScheduler` envia Web Push (VAPID) quando vence — privado só pro dono, compartilhado pra todos. Precisa de `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` no env da API; o service worker fica em `apps/web/src/sw.ts` (Serwist, desabilitado em `next dev` — testar push com build de produção). Ver `docs/java-migration/06-todos.md`.
+**Lembretes de todos** (só `apps/api-java`): data (`dueAt`) obrigatória e hora opcional (`allDay`); o `TodoReminderScheduler` envia Web Push (VAPID) quando vence — privado só pro dono, compartilhado pra todos. Precisa de `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` no env da API; o service worker fica em `apps/web/src/sw.ts` (Serwist, desabilitado em `next dev` — testar push com build de produção). Ver `docs/java-migration/06-todos.md`.
 
 **Site Settings** é uma tabela singleton (uma única linha, criada sob demanda no primeiro `GET`) — não é um recurso com múltiplas linhas.
 

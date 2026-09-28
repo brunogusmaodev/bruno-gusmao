@@ -58,6 +58,9 @@ public class Todo extends AuditableEntity {
     @Column(name = "notified_at")
     private Instant notifiedAt;
 
+    @Column(name = "all_day", nullable = false)
+    private boolean allDay = false;
+
     public UUID getId() {
         return id;
     }
@@ -108,6 +111,14 @@ public class Todo extends AuditableEntity {
 
     public void setDueAt(Instant dueAt) {
         this.dueAt = dueAt;
+    }
+
+    public boolean isAllDay() {
+        return allDay;
+    }
+
+    public void setAllDay(boolean allDay) {
+        this.allDay = allDay;
     }
 
     public Instant getNotifiedAt() {

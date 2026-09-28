@@ -11,13 +11,12 @@ import {
   Pencil,
   Plus,
   Trash2,
-  Undo2,
   Users,
   User,
   X,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTab, TabsIndicator, TabsPanel } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogPopup, DialogHeader, DialogTitle, DialogCloseButton } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -57,6 +56,7 @@ export type Todo = {
   shared: boolean;
   ownerId: string;
   dueAt: string | null;
+  allDay: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -65,21 +65,25 @@ type Tab = "mine" | "shared";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-function toLocalInputs(iso: string | null) {
+// Tarefa sem hora (dia inteiro) lembra nesse horário local.
+const ALL_DAY_REMINDER_TIME = "09:00";
+
+function toLocalInputs(iso: string | null, allDay: boolean) {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
   return {
     date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    time: allDay ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`,
   };
 }
 
 // "YYYY-MM-DDTHH:mm" sem fuso é interpretado como horário local do navegador.
 function fromLocalInputs(date: string, time: string) {
-  return date ? new Date(`${date}T${time || "09:00"}`).toISOString() : null;
+  return new Date(`${date}T${time || ALL_DAY_REMINDER_TIME}`).toISOString();
 }
 
 const dueFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const dayFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
 
 function sortPending(a: Todo, b: Todo) {
   if (a.dueAt && b.dueAt) return a.dueAt.localeCompare(b.dueAt);
@@ -88,10 +92,12 @@ function sortPending(a: Todo, b: Todo) {
   return a.createdAt.localeCompare(b.createdAt);
 }
 
-function DueChip({ dueAt, done, now }: { dueAt: string; done: boolean; now: number }) {
+function DueChip({ dueAt, allDay, done, now }: { dueAt: string; allDay: boolean; done: boolean; now: number }) {
   const due = new Date(dueAt).getTime();
-  const overdue = !done && due <= now;
-  const soon = !done && !overdue && due - now <= DAY_MS;
+  const dayStart = new Date(dueAt).setHours(0, 0, 0, 0);
+  // Dia inteiro só atrasa quando o dia termina; "em breve" = é hoje.
+  const overdue = !done && (allDay ? now >= dayStart + DAY_MS : due <= now);
+  const soon = !done && !overdue && (allDay ? now >= dayStart : due - now <= DAY_MS);
   return (
     <span
       className={cn(
@@ -103,7 +109,8 @@ function DueChip({ dueAt, done, now }: { dueAt: string; done: boolean; now: numb
       )}
     >
       <CalendarClock className="size-3" />
-      {dueFormatter.format(due)}
+      {allDay ? dayFormatter.format(due) : dueFormatter.format(due)}
+      {allDay && " · dia todo"}
       {overdue && " · atrasada"}
     </span>
   );
@@ -123,13 +130,12 @@ function TodoRow({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="group flex items-start gap-3 rounded-lg border border-border/50 bg-card/40 p-3 transition-colors hover:bg-card/70">
-      <Checkbox
-        checked={todo.done}
-        onCheckedChange={() => onToggle(todo)}
-        className="mt-0.5"
-        aria-label={todo.done ? "Marcar como pendente" : "Marcar como concluída"}
-      />
+    <div
+      className={cn(
+        "group flex flex-col gap-3 rounded-lg border p-3 transition-colors sm:flex-row sm:items-start",
+        todo.done ? "border-border/30 bg-card/20" : "border-border/60 bg-card/40 hover:bg-card/70",
+      )}
+    >
       <div className="min-w-0 flex-1">
         <p className={cn("text-sm font-medium leading-snug wrap-break-word", todo.done && "text-muted-foreground line-through")}>
           {todo.title}
@@ -137,27 +143,40 @@ function TodoRow({
         {todo.description && (
           <p className="mt-0.5 text-xs text-muted-foreground wrap-break-word">{todo.description}</p>
         )}
-        {todo.dueAt && now !== null && <DueChip dueAt={todo.dueAt} done={todo.done} now={now} />}
+        {todo.dueAt && now !== null && <DueChip dueAt={todo.dueAt} allDay={todo.allDay} done={todo.done} now={now} />}
       </div>
-      <div className="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-        {todo.done && (
-          <Button variant="ghost" size="icon-xs" onClick={() => onToggle(todo)} aria-label="Desmarcar concluída" title="Desmarcar">
-            <Undo2 />
+      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 sm:shrink-0 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
+        <label className="flex cursor-pointer items-center gap-2 py-1 select-none">
+          <Switch
+            checked={todo.done}
+            onCheckedChange={() => onToggle(todo)}
+            className="data-checked:bg-emerald-500"
+            aria-label={todo.done ? "Marcar como pendente" : "Marcar como concluída"}
+          />
+          <span
+            className={cn(
+              "text-[11px] font-heading uppercase tracking-widest",
+              todo.done ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+            )}
+          >
+            {todo.done ? "Concluída" : "Pendente"}
+          </span>
+        </label>
+        <div className="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+          <Button variant="ghost" size="icon-sm" onClick={() => onEdit(todo)} aria-label="Editar tarefa" title="Editar">
+            <Pencil />
           </Button>
-        )}
-        <Button variant="ghost" size="icon-xs" onClick={() => onEdit(todo)} aria-label="Editar tarefa" title="Editar">
-          <Pencil />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => onDelete(todo.id)}
-          className="hover:text-destructive"
-          aria-label="Excluir tarefa"
-          title="Excluir"
-        >
-          <Trash2 />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => onDelete(todo.id)}
+            className="hover:text-destructive"
+            aria-label="Excluir tarefa"
+            title="Excluir"
+          >
+            <Trash2 />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -310,7 +329,7 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
   };
 
   const openEdit = (todo: Todo) => {
-    const { date, time } = toLocalInputs(todo.dueAt);
+    const { date, time } = toLocalInputs(todo.dueAt, todo.allDay);
     setEditing(todo);
     setTitle(todo.title);
     setDescription(todo.description ?? "");
@@ -323,8 +342,9 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
     setTodos((prev) => (prev.some((t) => t.id === todo.id) ? prev.map((t) => (t.id === todo.id ? todo : t)) : [...prev, todo]));
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !dueDate) return;
     const dueAt = fromLocalInputs(dueDate, dueTime);
+    const allDay = !dueTime;
     setSaving(true);
     try {
       const res = editing
@@ -335,7 +355,8 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
             body: JSON.stringify({
               title: title.trim(),
               description: description.trim(),
-              ...(dueAt ? { dueAt } : editing.dueAt ? { clearDueAt: true } : {}),
+              dueAt,
+              allDay,
             }),
           })
         : await fetch(`${API}/api/todos`, {
@@ -347,6 +368,7 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
               description: description.trim() || null,
               shared: tab === "shared",
               dueAt,
+              allDay,
             }),
           });
       if (!res.ok) throw new Error();
@@ -361,14 +383,17 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
   };
 
   const handleToggle = async (todo: Todo) => {
-    const res = await fetch(`${API}/api/todos/${todo.id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done: !todo.done }),
-    });
-    if (!res.ok) return toast("Erro ao atualizar tarefa", "error");
-    upsertLocal(await res.json());
+    upsertLocal({ ...todo, done: !todo.done });
+    try {
+      const res = await fetch(`${API}/api/todos/${todo.id}/toggle`, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error();
+      const updated: Todo = await res.json();
+      upsertLocal(updated);
+      toast(updated.done ? "Tarefa concluída" : "Tarefa reaberta");
+    } catch {
+      upsertLocal(todo);
+      toast("Erro ao atualizar tarefa", "error");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -386,25 +411,25 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
     <>
       <Toaster />
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <TabsList>
-            <TabsTab value="mine" className="flex items-center gap-1.5">
-              <User className="size-3.5" /> Meus
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
+            <TabsTab value="mine" className="flex items-center justify-center gap-1.5">
+              <User className="size-3.5 shrink-0" /> Meus
             </TabsTab>
-            <TabsTab value="shared" className="flex items-center gap-1.5">
-              <Users className="size-3.5" /> Compartilhados
+            <TabsTab value="shared" className="flex items-center justify-center gap-1.5">
+              <Users className="size-3.5 shrink-0" /> Compartilhados
             </TabsTab>
             <TabsIndicator />
           </TabsList>
           <div className="flex items-center gap-2">
             <NotificationsButton onMessage={toast} />
-            <Button onClick={openCreate} className="gap-2 text-xs">
+            <Button onClick={openCreate} className="flex-1 gap-2 text-xs sm:flex-none">
               <Plus className="size-3.5" /> Nova tarefa
             </Button>
           </div>
         </div>
 
-        <TabsPanel value="mine" className="mt-4">
+        <TabsPanel value="mine" className="mt-2 sm:mt-4">
           <TodoList
             todos={mine}
             {...listProps}
@@ -417,7 +442,7 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
           />
         </TabsPanel>
 
-        <TabsPanel value="shared" className="mt-4">
+        <TabsPanel value="shared" className="mt-2 sm:mt-4">
           <TodoList
             todos={shared}
             {...listProps}
@@ -471,54 +496,56 @@ export function TodosBoard({ initialTodos }: { initialTodos: Todo[] }) {
                   maxLength={1000}
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className={labelClass}>
-                    Data e hora <span className="normal-case font-sans">(opcional)</span>
-                  </span>
-                  {(dueDate || dueTime) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDueDate("");
-                        setDueTime("");
-                      }}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="size-3" /> Remover
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-[1fr_auto] gap-2">
+              <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-[1fr_auto]">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="todo-date" className={labelClass}>
+                    Data <span className="text-destructive">*</span>
+                  </label>
                   <input
+                    id="todo-date"
                     type="date"
-                    aria-label="Data"
+                    required
                     className={inputClass}
                     value={dueDate}
-                    onChange={(e) => {
-                      setDueDate(e.target.value);
-                      if (e.target.value && !dueTime) setDueTime("09:00");
-                    }}
+                    onChange={(e) => setDueDate(e.target.value)}
                   />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="todo-time" className={labelClass}>
+                      Hora <span className="normal-case font-sans">(opcional)</span>
+                    </label>
+                    {dueTime && (
+                      <button
+                        type="button"
+                        onClick={() => setDueTime("")}
+                        className="flex items-center text-muted-foreground hover:text-destructive"
+                        aria-label="Remover hora"
+                        title="Remover hora"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <input
+                    id="todo-time"
                     type="time"
-                    aria-label="Hora"
                     className={inputClass}
                     value={dueTime}
-                    disabled={!dueDate}
                     onChange={(e) => setDueTime(e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {isShared
-                    ? "Todos os usuários com notificações ativas serão avisados nesse horário."
-                    : "Você será notificado nesse horário nos dispositivos com notificações ativas."}
-                </p>
               </div>
+              <p className="-mt-2 text-xs text-muted-foreground">
+                {dueTime ? "Lembrete nesse horário" : `Sem hora: tarefa do dia todo, lembrete às ${ALL_DAY_REMINDER_TIME}`}
+                {isShared
+                  ? " para todos os usuários com notificações ativas."
+                  : " nos dispositivos com notificações ativas."}
+              </p>
             </div>
-            <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saving || !title.trim()}>
+            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" size="lg" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button type="submit" size="lg" disabled={saving || !title.trim() || !dueDate}>
                 {saving ? "Salvando..." : editing ? "Salvar" : "Criar tarefa"}
               </Button>
             </div>

@@ -13,6 +13,7 @@ public record TodoResponse(
         boolean shared,
         UUID ownerId,
         Instant dueAt,
+        boolean allDay,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -26,6 +27,7 @@ public record TodoResponse(
                 todo.isShared(),
                 todo.getOwner().getId(),
                 todo.getDueAt(),
+                todo.isAllDay(),
                 todo.getCreatedAt(),
                 todo.getUpdatedAt()
         );

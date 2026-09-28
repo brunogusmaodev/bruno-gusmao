@@ -142,7 +142,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash_screens/8.3__iPad_Mini_portrait.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         <link rel="apple-touch-startup-image" href="/splash_screens/8.3__iPad_Mini_landscape.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
       </head>
-      <body className="min-h-screen flex flex-col items-center px-30">
+      <body className="min-h-screen flex flex-col items-center px-3 sm:px-6 lg:px-30">
         <ThemeProvider>
           <EventPopup />
           <div className="w-full sm:min-w-[85%] md:min-w-[80%] max-h-screen">
